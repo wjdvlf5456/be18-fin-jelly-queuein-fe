@@ -1,3 +1,24 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+*.local
+.env*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
 HELP.md
 .gradle
 gradle.properties
@@ -21,6 +42,11 @@ bin/
 
 ### IntelliJ IDEA ###
 .idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 *.iws
 *.iml
 *.ipr
@@ -35,18 +61,27 @@ out/
 /nbdist/
 /.nb-gradle/
 
+*.tsbuildinfo
 ### VS Code ###
 .vscode/
 
+.eslintcache
 # MacOS
 .DS_Store
 
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
 # Gradle
 .gradle/
 
+# Vitest
+__screenshots__/
 # IntelliJ / VSCode
 .idea/
 
+# Vercel
+.vercel/
 # Node / Frontend
 node_modules/
 dist/
@@ -70,4 +105,7 @@ src/test/
 # 시크릿
 **/secret.yaml
 
+# temp
+.Spotlight-V100
+.Trashes
 

@@ -1,0 +1,16 @@
+@import './base.css';
+
+/* 기본 리셋 */
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: Inter, sans-serif;
+}
+
+/* 앱 전체는 기본 block 렌더링 */
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
