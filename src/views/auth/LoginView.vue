@@ -26,6 +26,7 @@ async function login() {
     localStorage.setItem('accessToken', data.accessToken)
     localStorage.setItem('refreshToken', data.refreshToken)
     localStorage.setItem('role', data.role)
+    localStorage.setItem("userName", data.userName)
 
     router.push('/app')
 

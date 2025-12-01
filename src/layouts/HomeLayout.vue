@@ -1,30 +1,46 @@
-<!-- file: src/layouts/HomeLayout.vue -->
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { RouterView } from 'vue-router'
 
-const isSidebarOpen = ref(false)
+const isFixedOpen = ref(false)
+const isHoverOpen = ref(false)
+
+const isSidebarOpen = computed(() => isFixedOpen.value || isHoverOpen.value)
 
 function toggleSidebar() {
-  isSidebarOpen.value = !isSidebarOpen.value
+  isFixedOpen.value = !isFixedOpen.value
+}
+
+function openHover() {
+  if (!isFixedOpen.value) isHoverOpen.value = true
+}
+
+function closeHover() {
+  if (!isFixedOpen.value) isHoverOpen.value = false
 }
 </script>
 
 <template>
   <div class="layout">
-
     <AppHeader @toggle-sidebar="toggleSidebar" />
 
-    <div class="main">
-      <AppSidebar :open="isSidebarOpen" />
+    <!-- 화면 어두워지는 오버레이 -->
+    <div v-if="isSidebarOpen" class="overlay" @click="isFixedOpen = false"></div>
 
-      <main class="content">
-        <RouterView />
-      </main>
-    </div>
+    <!-- 사이드바 -->
+    <AppSidebar
+      :open="isSidebarOpen"
+      @hover-open="openHover"
+      @hover-close="closeHover"
+      @close-sidebar="isFixedOpen = false" 
+    />
+
+    <main class="content">
+      <RouterView />
+    </main>
 
     <AppFooter />
   </div>
@@ -32,22 +48,17 @@ function toggleSidebar() {
 
 <style scoped>
 .layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  position: relative;
 }
 
-.main {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* 본문 영역 */
 .content {
-  flex: 1;
-  background: #ffffff;
-  padding: 30px;
-  overflow-y: auto;
+  padding: 40px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 20;
 }
 </style>
