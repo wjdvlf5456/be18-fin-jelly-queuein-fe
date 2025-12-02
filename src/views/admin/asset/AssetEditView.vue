@@ -1,7 +1,13 @@
 <!-- file: src/views/admin/asset/AssetEditView.vue -->
 <template>
   <div>
-    <AssetForm v-if="form" :initialData="form" submitText="자원 수정" :onSubmit="updateAsset" />
+    <AssetForm
+      v-if="form"
+      :initialData="form"
+      submitText="자원 수정"
+      :onSubmit="updateAsset"
+      :isEdit="true"
+    />
   </div>
 </template>
 

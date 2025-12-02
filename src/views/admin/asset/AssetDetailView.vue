@@ -1,13 +1,9 @@
 <template>
   <div class="detail-wrapper">
+    <h3 class="tree-title">자원 상세 정보</h3>
     <!-- 왼쪽: 계층 구조 트리 -->
     <div class="tree-panel">
-      <h3 class="tree-title">자원 상세 정보</h3>
-
-      <ul class="tree-list">
-        <li class="tree-root">🏢 {{ asset.parentName || '루트 자원' }}</li>
-        <li>📍 {{ asset.name }}</li>
-      </ul>
+      <AssetTreeView :currentId="assetId" />
     </div>
 
     <!-- 오른쪽: 상세 정보 -->
@@ -79,19 +75,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { assetApi } from '@/api/assetApi'
+import AssetTreeView from './components/AssetTreeView.vue'
 
 const route = useRoute()
 const router = useRouter()
-const assetId = route.params.assetId
+const assetId = ref(route.params.assetId)
 
 const asset = ref({})
 
 async function loadDetail() {
   try {
-    const res = await assetApi.getDetail(assetId)
+    const res = await assetApi.getDetail(assetId.value)
     asset.value = res.data
   } catch (e) {
     console.error(e)
@@ -100,7 +97,7 @@ async function loadDetail() {
 }
 
 function goEdit() {
-  router.push(`/admin/assets/${assetId}/edit`)
+  router.push(`/admin/assets/${assetId.value}/edit`)
 }
 
 // 표시 변환 함수들
@@ -126,6 +123,13 @@ const convertType = (type) => {
 const formatPrice = (v) => (v != null ? `${v.toLocaleString()}원` : '-')
 
 onMounted(loadDetail)
+watch(
+  () => route.params.assetId,
+  (newId) => {
+    assetId.value = newId
+    loadDetail()
+  },
+)
 </script>
 
 <style scoped>
@@ -140,6 +144,9 @@ onMounted(loadDetail)
   width: 250px;
   border-right: 1px solid #e5e5e5;
   padding-right: 20px;
+  overflow: auto;
+  white-space: nowrap;
+  height: calc(100vh - 140px);
 }
 
 .tree-title {

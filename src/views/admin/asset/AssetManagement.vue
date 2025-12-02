@@ -49,6 +49,8 @@
           <td>
             <button class="edit-btn" @click.stop="editAsset(a)">수정</button>
             /
+            <button class="move-btn" @click.stop="openMoveModal(a)">이동</button>
+            /
             <button class="delete-btn" @click.stop="deleteAsset(a)">삭제</button>
           </td>
         </tr>
@@ -84,6 +86,8 @@
       @confirm="confirmDelete"
       @cancel="showDeleteModal = false"
     />
+
+    <AssetMoveModal v-if="showMoveModal" :onConfirm="confirmMove" :onClose="closeMoveModal" />
   </div>
 </template>
 
@@ -101,6 +105,7 @@ import CategoryDropDownMenu from '@/components/common/CategoryDropDownMenu.vue'
 import AssetTypeDropdown from '@/components/common/AssetTypeDropdown.vue'
 import AssetStatusDropdown from '@/components/common/AssetStatusDropdown.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import AssetMoveModal from './components/AssetMoveModal.vue'
 
 const building = ref('')
 const location = ref('')
@@ -118,6 +123,10 @@ const totalPages = ref(1)
 
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
+
+// 자원 이동에 필요한 변수
+const showMoveModal = ref(false)
+const moveTarget = ref(null)
 
 async function loadAssets() {
   const res = await api.get('/assets/descendants', {
@@ -147,6 +156,19 @@ async function confirmDelete() {
   }
 }
 
+async function confirmMove(newParentName) {
+  try {
+    await assetApi.move(moveTarget.value.assetId, newParentName)
+
+    alert('자원이 이동되었습니다.')
+    closeMoveModal()
+    loadAssets() // 목록 새로고침
+  } catch (err) {
+    alert(err.response?.data?.message || '이동 실패')
+    console.error(err)
+  }
+}
+
 function changePage(p) {
   page.value = p
   loadAssets()
@@ -171,6 +193,15 @@ function goDetail(assetId) {
 function deleteAsset(asset) {
   deleteTarget.value = asset
   showDeleteModal.value = true
+}
+
+function openMoveModal(asset) {
+  moveTarget.value = asset
+  showMoveModal.value = true
+}
+
+function closeMoveModal() {
+  showMoveModal.value = false
 }
 
 onMounted(loadAssets)
@@ -313,4 +344,16 @@ onMounted(loadAssets)
   border: none;
   outline: none;
 }
+
+.move-btn {
+  color: #2f5d2f;
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+/* .move-btn:hover {
+  background-color: #cfe3cf;
+} */
 </style>

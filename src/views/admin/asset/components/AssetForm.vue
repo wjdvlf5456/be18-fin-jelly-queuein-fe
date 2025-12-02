@@ -18,7 +18,9 @@
           <td>
             <input
               v-model="form.parentName"
-              class="input"
+              class="input readonly-input"
+              :readonly="props.isEdit"
+              :disabled="props.isEdit"
               placeholder="부모 자원 이름을 입력하세요"
             />
           </td>
@@ -126,6 +128,7 @@ const props = defineProps({
   initialData: { type: Object, default: () => ({}) },
   submitText: { type: String, default: '자원 생성' },
   onSubmit: { type: Function },
+  isEdit: { type: Boolean, default: false },
 })
 
 // 초기값 세팅
@@ -183,6 +186,13 @@ td {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
+}
+
+.readonly-input[disabled] {
+  opacity: 0.6;
+  background-color: #eaeaea;
+  cursor: not-allowed;
+  color: #555;
 }
 
 .textarea {
