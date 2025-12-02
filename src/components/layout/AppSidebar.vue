@@ -80,9 +80,9 @@ function isActiveStartsWith(basePath) {
       <!-- 유저 관리 -->
       <router-link
         v-if="isAdmin"
-        to="/admin"
+        to="/admin/users"
         class="item"
-        :class="{ active: isActiveExact('/admin') }"
+        :class="{ active: isActiveStartsWith('/admin/users') }"
         @click="$emit('close-sidebar')"
       >
         <img src="@/assets/icons/user.svg" class="icon" />

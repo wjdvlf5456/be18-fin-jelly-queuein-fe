@@ -5,12 +5,12 @@ import { computed } from 'vue'
 const route = useRoute()
 const router = useRouter()
 
-const emit = defineEmits(['toggle-sidebar'])
+//const emit = defineEmits(['toggle-sidebar'])
 
 // ===============================
 // 🧩 로그인 사용자 정보 가져오기
 // ===============================
-const role = localStorage.getItem('role') || '' 
+const role = localStorage.getItem('role') || ''
 const name = (localStorage.getItem('userName') || '').trim()
 
 // ===============================
@@ -58,6 +58,8 @@ const breadcrumbMap = {
   settlement: '정산 관리',
   usage: '정산 관리',
   users: '유저 관리',
+  roles: '역할 관리',
+  permissions: '권한 관리',
   schedule: '일정 관리',
   reservation: '예약 관리',
 }

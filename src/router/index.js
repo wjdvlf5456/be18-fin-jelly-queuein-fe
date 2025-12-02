@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import AdminDashboard from '@/views/admin/AdminDashboard.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import ChangePasswordView from '@/views/auth/ChangePasswordView.vue'
+import ChangeTempPasswordView from '@/views/auth/ChangeTempPasswordView.vue'
 import DashboardView from '@/views/app/DashboardView.vue'
 import HomeLayout from '@/layouts/HomeLayout.vue'
 import LoginView from '@/views/auth/LoginView.vue'
@@ -21,7 +21,7 @@ const router = createRouter({
       component: PublicLayout,
       children: [
         { path: '', component: LoginView },
-        { path: 'change-password', component: ChangePasswordView },
+        { path: 'change-password', component: ChangeTempPasswordView },
       ],
     },
 
@@ -44,6 +44,41 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'ADMIN' },
       children: [
         { path: '', component: AdminDashboard },
+
+        // -------------------------
+        // 기본 이동: /admin → /admin/users
+        // -------------------------
+        { path: '', redirect: '/admin/users' },
+
+        // -------------------------
+        // 사용자 관리
+        // -------------------------
+        {
+          path: 'users',
+          component: () =>
+            import('@/views/admin/iam/user/UserManagement.vue'),
+          meta: { title: '사용자 관리', minRole: 'ADMIN' }
+        },
+
+        // -------------------------
+        // 역할 관리
+        // -------------------------
+        {
+          path: 'roles',
+          component: () =>
+            import('@/views/admin/iam/role/RoleManagement.vue'),
+          meta: { title: '역할 관리', minRole: 'ADMIN' }
+        },
+
+        // -------------------------
+        // 권한 관리
+        // -------------------------
+        {
+          path: 'permissions',
+          component: () =>
+            import('@/views/admin/iam/permission/PermissionManagement.vue'),
+          meta: { title: '권한 관리', minRole: 'ADMIN' }
+        },
 
         // ========== ⭐ 자원 관리 그룹 ==========
         {
