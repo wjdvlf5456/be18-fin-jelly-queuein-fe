@@ -10,7 +10,9 @@ export const userApi = {
   createUser: (payload) => api.post('/users', payload),
 
   // 사용자 수정 (MASTER, ADMIN, MANAGER)
+  updateUserRole: (userId, payload) => api.patch(`/users/${userId}/role`, payload),
   updateUser: (userId, payload) => api.patch(`/users/${userId}`, payload),
+  updateMe: (payload) => api.patch('/users/me', payload),
 
   // 임시 비밀번호 변경 (로그인 직후)
   changeTempPassword: (payload,config) => api.patch('/users/me/temp-password', payload, config),
@@ -36,5 +38,5 @@ export const userApi = {
   getUser: (userId) => api.get(`/users/${userId}`),
 
   // 내 정보 조회
-  getMyInfo: () => api.get('/users/me'),
+  getMe: () => api.get('/users/me'),
 }

@@ -15,6 +15,10 @@ import router from './router';
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import Chart from 'primevue/chart';
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Toast from 'primevue/toast'
+import ToastService from 'primevue/toastservice'
 
 
 
@@ -28,9 +32,6 @@ import 'remixicon/fonts/remixicon.css';
 
 const app = createApp(App);
 
-app.use(createPinia());
-app.use(router);
-
 app.use(ElementPlus)
 app.use(createPinia())
 app.use(router)
@@ -43,6 +44,11 @@ app.use(PrimeVue, {
     }
   }
 });
+
+app.component('Dialog', Dialog)
+app.component('Button', Button)
+app.component('Toast', Toast)
+app.use(ToastService)
 
 app.component('Chart', Chart);
 app.mount('#app');

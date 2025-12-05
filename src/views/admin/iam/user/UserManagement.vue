@@ -92,6 +92,7 @@ async function confirmDelete(userId) {
 // 수정 기능
 // --------------------------------------------------
 function editUser(user) {
+  if (user.roleName === "MASTER") return;
   router.push(`/admin/users/${user.userId}/edit`)
 }
 
@@ -197,10 +198,10 @@ const roleTagStyle = {
 
       <Column field="userName" header="사원명" sortable />
       <Column field="email" header="이메일" sortable />
-      <Column field="phone" header="연락처" />
+      <Column field="phone" header="연락처" sortable />
 
       <!-- 역할 -->
-      <Column header="역할">
+      <Column field="roleName" header="역할" sortable>
         <template #body="{ data }">
           <Tag
             :value="data.roleName"
@@ -221,24 +222,26 @@ const roleTagStyle = {
 <!--        </template>-->
 <!--      </Column>-->
 
-      <Column header="마지막 접속">
+      <Column field="lastLoginAt" header="마지막 접속" sortable>
         <template #body="{ data }">
           {{ formatDate(data.lastLoginAt) }}
         </template>
       </Column>
       <!-- Actions -->
-      <Column header="Actions">
+      <Column header="사용자 편집하기">
         <template #body="{ data }">
           <Button
             icon="pi pi-pencil"
             text
             rounded
+            :disabled="data.roleName === 'MASTER'"
             @click="editUser(data)"
           />
           <Button
             icon="pi pi-trash"
             text
             rounded
+            :disabled="data.roleName === 'MASTER'"
             severity="danger"
             @click="confirmDelete(data.userId)"
           />

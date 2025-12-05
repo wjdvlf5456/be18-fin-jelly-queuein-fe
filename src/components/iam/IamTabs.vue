@@ -21,7 +21,7 @@ const route = useRoute()
 const tabs = [
   { label: '사용자', to: '/admin/users', icon: 'pi pi-user' },
   { label: '역할', to: '/admin/roles', icon: 'pi pi-shield' },
-  { label: '권한', to: '/admin/permissions', icon: 'pi pi-key' }
+  { label: '권한', to: '/admin/permissions/matrix', icon: 'pi pi-key' }
 ]
 
 function go(path) {

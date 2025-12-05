@@ -34,6 +34,11 @@ const avatarText = computed(() => {
   return name ? name.trim().charAt(0) : roleText.value.charAt(0)
 })
 
+// 마이페이지로 이동
+function goMyPage() {
+  router.push({ name: 'MyPage' })
+}
+
 // ===============================
 // 🔐 로그아웃
 // ===============================
@@ -110,7 +115,7 @@ function getBreadcrumbHtml() {
 
       <i class="ri-notification-3-line icon"></i>
 
-      <div class="profile">
+      <div class="profile" @click="goMyPage" style="cursor: pointer;">
         <div class="avatar">{{ avatarText }}</div>
         <span>{{ roleText }}</span>
       </div>

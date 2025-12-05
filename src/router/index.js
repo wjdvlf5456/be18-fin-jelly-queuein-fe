@@ -35,7 +35,14 @@ const router = createRouter({
       // meta: { requiresAuth: true },
       children: [
         { path: '', component: DashboardView },
-        
+
+        {
+          path: 'users/me',
+          name: 'MyPage',
+          component: () => import('@/views/app/user/MyPage.vue'),
+          meta: { requiresAuth: true }
+        },
+
         {
           path: 'reservations/me',
           component: () => import('@/views/app/reservation/UserReservations.vue'),
@@ -100,6 +107,13 @@ const router = createRouter({
             import('@/views/admin/iam/user/UserManagement.vue'),
           meta: { title: '사용자 관리', minRole: 'ADMIN' }
         },
+        // 관리자용 사용자 수정
+        {
+          path: 'users/:userId/edit',
+          name: 'UserEdit',
+          component: () => import('@/views/admin/iam/user/UserEditView.vue'),
+          meta: { title: '사용자 수정', minRole: 'ADMIN' }
+        },
 
         // -------------------------
         // 역할 관리
@@ -116,9 +130,38 @@ const router = createRouter({
         // -------------------------
         {
           path: 'permissions',
-          component: () =>
-            import('@/views/admin/iam/permission/PermissionManagement.vue'),
-          meta: { title: '권한 관리', minRole: 'ADMIN' }
+          meta: { minRole: 'ADMIN' },
+          children: [
+            { path: '', redirect: '/admin/permissions/list' },
+
+            {
+              path: 'list',
+              component: () =>
+                import('@/views/admin/iam/permission/PermissionList.vue'),
+              meta: { title: '권한 목록', minRole: 'ADMIN' }
+            },
+
+            {
+              path: 'create',
+              component: () =>
+                import('@/views/admin/iam/permission/PermissionCreate.vue'),
+              meta: { title: '권한 생성', minRole: 'MASTER' }
+            },
+
+            {
+              path: ':permissionId/edit',
+              component: () =>
+                import('@/views/admin/iam/permission/PermissionEdit.vue'),
+              meta: { title: '권한 수정', minRole: 'MASTER' }
+            },
+
+            {
+              path: 'matrix',
+              component: () =>
+                import('@/views/admin/iam/permission/PermissionMatrix.vue'),
+              meta: { title: '역할-권한 매핑', minRole: 'ADMIN' }
+            }
+          ]
         },
 
         // ========== ⭐ 자원 관리 그룹 ==========
@@ -203,7 +246,7 @@ const router = createRouter({
         }
       ],
     },
-  
+
 
     // ---------------------------------------------------------
     // 오류 페이지

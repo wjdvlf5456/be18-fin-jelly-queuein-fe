@@ -17,6 +17,9 @@ import Textarea from 'primevue/textarea'
 const roles = ref([])
 const loading = ref(false)
 
+// 펼침 여부 roleId → boolean
+const expanded = ref({})
+
 // 역할 생성/수정 다이얼로그 상태
 const showDialog = ref(false)
 const editMode = ref(false)
@@ -38,7 +41,17 @@ async function loadRoles() {
   // 응답 구조: { roles: [...] }
   roles.value = res.data.roles
 
+  // 초기에는 모두 접힌 상태
+  expanded.value = Object.fromEntries(
+    roles.value.map(r => [r.roleId, false])
+  )
+
   loading.value = false
+}
+
+// 펼침/접기 토글
+function toggleExpand(roleId) {
+  expanded.value[roleId] = !expanded.value[roleId]
 }
 
 onMounted(loadRoles)
@@ -169,20 +182,23 @@ async function deleteRole(role) {
         </template>
 
         <template #subtitle>
-          <!-- role.userCount는 아직 없음 → 주석 처리 -->
-          <!-- <div class="sub-info">
+           <div class="sub-info">
             <i class="pi pi-users"></i>
             {{ role.userCount }} 명
-          </div> -->
+          </div>
         </template>
 
         <template #content>
           <p class="role-desc">{{ role.roleDescription }}</p>
 
-          <!-- permissions는 현재 DTO에 없음 → 주석처리 -->
-          <!--
-          <h4>Permissions</h4>
-          <div class="perm-list">
+          <!-- 펼침/접기 버튼 -->
+          <div class="perm-header" @click="toggleExpand(role.roleId)">
+            <span>Permissions</span>
+            <i :class="expanded[role.roleId] ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
+          </div>
+
+          <!-- 펼쳐진 경우에만 Permissions 목록 표시 -->
+          <div v-if="expanded[role.roleId]" class="perm-list">
             <Chip
               v-for="p in role.permissions"
               :key="p.permissionId"
@@ -190,7 +206,6 @@ async function deleteRole(role) {
               class="perm-chip"
             />
           </div>
-          -->
         </template>
       </Card>
     </div>

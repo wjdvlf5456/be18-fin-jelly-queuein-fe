@@ -30,6 +30,16 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config
 
+    // 403
+    if (error.response && error.response.status === 403) {
+      // 1) 모달 메시지
+      ElMessage.error('접근 권한이 없습니다.')
+
+      // 2) 403 페이지로 이동
+      window.location.href = '/403'
+      return Promise.reject(error)
+    }
+
     // Access Token 만료
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
