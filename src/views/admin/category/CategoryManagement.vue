@@ -3,65 +3,66 @@
     <!-- 페이지 제목 -->
     <h2 class="page-title">자원 카테고리</h2>
 
-    <!-- 카테고리 목록 테이블 -->
-    <table class="category-table">
-      <thead>
-        <tr>
-          <th>카테고리 번호</th>
-          <th>카테고리 명</th>
-          <th>개수</th>
-          <th>생성자</th>
-          <th>생성 날짜</th>
-          <th>카테고리 설명</th>
-          <th>편집</th>
-        </tr>
-      </thead>
+    <!-- 상단 필터 영역 (필요하면 여기에 추가 가능) -->
 
-      <tbody>
-        <tr v-for="c in categories" :key="c.categoryId">
-          <td>{{ c.categoryId }}</td>
-          <td>{{ c.name }}</td>
-          <td>{{ c.assetCount }}</td>
-          <td>{{ resolveCreatedBy(c.createdBy) }}</td>
-          <td>{{ formatDate(c.createdAt) }}</td>
-          <td>{{ c.description }}</td>
-          <td class="actions">
-            <button class="edit-btn" @click.stop="editCategory(c)">수정</button>
-            /
-            <button class="delete-btn" @click.stop="deleteCategory(c)">삭제</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- 카테고리 목록 테이블 -->
+    <el-table
+      :data="categories"
+      stripe
+      border
+      style="width: 100%"
+      :empty-text="'데이터가 없습니다.'"
+    >
+      <el-table-column prop="categoryId" label="카테고리 번호" width="120" />
+      <el-table-column prop="name" label="카테고리 명" width="200" />
+      <el-table-column prop="assetCount" label="개수" width="100" />
+      <el-table-column prop="createdBy" label="생성자" width="120">
+        <template #default="{ row }">
+          {{ resolveCreatedBy(row.createdBy) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="createdAt" label="생성 날짜" width="120">
+        <template #default="{ row }">
+          {{ formatDate(row.createdAt) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="description" label="카테고리 설명" />
+      <el-table-column label="편집" width="180">
+        <template #default="{ row }">
+          <el-button type="primary" text size="small" @click.stop="editCategory(row)"
+            >수정</el-button
+          >
+          <el-button type="danger" text size="small" @click.stop="deleteCategory(row)"
+            >삭제</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
 
     <!-- 페이지네이션 -->
-    <div class="pagination-container">
-      <button :disabled="page === 0" @click="changePage(page - 1)">〈</button>
-
-      <button
-        v-for="p in totalPages"
-        :key="p"
-        :class="['page-btn', { active: p - 1 === page }]"
-        @click="changePage(p - 1)"
-      >
-        {{ p }}
-      </button>
-
-      <button :disabled="page + 1 >= totalPages" @click="changePage(page + 1)">〉</button>
+    <div class="pagination">
+      <el-pagination
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="size"
+        :current-page="page + 1"
+        @current-change="changePage"
+      />
     </div>
 
     <!-- 생성 버튼 -->
-    <div>
-      <button class="create-btn" @click="openCreateModal">카테고리 생성</button>
-
-      <CategoryFormModal
-        v-if="showCreateModal"
-        title="카테고리 생성"
-        submitText="등록"
-        @submit="createCategory"
-        @close="showCreateModal = false"
-      />
+    <div class="bottom-actions">
+      <el-button type="success" @click="openCreateModal">카테고리 생성</el-button>
     </div>
+
+    <!-- 모달들 -->
+    <CategoryFormModal
+      v-if="showCreateModal"
+      title="카테고리 생성"
+      submitText="등록"
+      @submit="createCategory"
+      @close="showCreateModal = false"
+    />
 
     <CategoryFormModal
       v-if="showEditModal"
@@ -88,86 +89,58 @@ import { categoryApi } from '@/api/categoryApi'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import CategoryFormModal from './CategoryFormModal.vue'
 
-// 상태
 const categories = ref([])
 const page = ref(0)
 const size = ref(10)
-const totalPages = ref(1)
+const total = ref(0)
 const showCreateModal = ref(false)
 const showDeleteModal = ref(false)
 const showEditModal = ref(false)
 const editTarget = ref(null)
-
 const selectedCategory = ref(null)
 
-// 날짜 포맷
 function formatDate(dateString) {
   if (!dateString) return '-'
   return new Date(dateString).toISOString().split('T')[0]
 }
 
-// createdBy → 이름 매핑 (나중에 실제 값으로 대체)
 function resolveCreatedBy(id) {
   return id ? '관리자' : '-'
 }
 
-// 데이터 로드
 async function loadCategories() {
   const res = await categoryApi.getManagementList(page.value, size.value)
   categories.value = res.data.content
-  totalPages.value = res.data.totalPages
+  total.value = res.data.totalElements
 }
 
-// 페이지 이동
 function changePage(newPage) {
-  page.value = newPage
+  page.value = newPage - 1
   loadCategories()
 }
 
-// 버튼 클릭 이벤트 (모달 작업은 다음 단계)
 async function createCategory(data) {
-  try {
-    await categoryApi.create(data)
-    alert('카테고리가 생성되었습니다.')
-
-    await loadCategories()
-
-    closeCreateModal()
-  } catch (err) {
-    console.error(err)
-    alert('카테고리 생성 실패')
-  }
+  await categoryApi.create(data)
+  alert('카테고리가 생성되었습니다.')
+  showCreateModal.value = false
+  loadCategories()
 }
 
 async function updateCategory(data) {
-  try {
-    await categoryApi.update(editTarget.value.categoryId, data)
-    alert('카테고리가 수정되었습니다.')
-
-    showEditModal.value = false
-    await loadCategories()
-  } catch (err) {
-    console.error(err)
-    alert('수정 실패')
-  }
+  await categoryApi.update(editTarget.value.categoryId, data)
+  alert('카테고리가 수정되었습니다.')
+  showEditModal.value = false
+  loadCategories()
 }
 
 async function confirmDelete() {
-  try {
-    await categoryApi.delete(selectedCategory.value.categoryId)
-    showDeleteModal.value = false
-    loadCategories()
-  } catch (err) {
-    alert(err.response?.data?.message || '삭제 실패')
-  }
+  await categoryApi.delete(selectedCategory.value.categoryId)
+  showDeleteModal.value = false
+  loadCategories()
 }
 
 function openCreateModal() {
   showCreateModal.value = true
-}
-
-function closeCreateModal() {
-  showCreateModal.value = false
 }
 
 function editCategory(c) {
@@ -184,91 +157,21 @@ onMounted(loadCategories)
 </script>
 
 <style scoped>
-.category-page {
-  position: relative;
-}
-
 .page-title {
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 20px;
 }
 
-/* 테이블 */
-.category-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.category-table th {
-  background: #f7f7f7;
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.category-table td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-}
-
-.actions {
-  color: #555;
-}
-
-.edit-btn {
-  color: #2d6cdf;
-  cursor: pointer;
-  background: none;
-  border: none;
-  outline: none;
-}
-
-.delete-btn {
-  color: #d9534f;
-  cursor: pointer;
-  background: none;
-  border: none;
-  outline: none;
-}
-
-/* 페이지네이션 */
-.pagination-container {
+.pagination {
   display: flex;
   justify-content: center;
-  margin-top: 25px;
-}
-.page-btn {
-  padding: 4px 10px;
-  background: #fff;
-  border: 1px solid #b6ceb4;
-  cursor: pointer;
-  border-radius: 4px;
+  margin-top: 20px;
 }
 
-.page-btn.active {
-  background: #b6ceb4; /* 사이드바 강조색 */
-  border-color: #b6ceb4;
-  color: #000;
-}
-
-/* 우측 하단 생성 버튼 */
-.create-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: #b6ceb4; /* 사이드바 강조색 */
-  color: #000;
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  border: none;
-  outline: none;
-}
-
-.page-btn:hover,
-.create-btn:hover {
-  opacity: 0.85;
+.bottom-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

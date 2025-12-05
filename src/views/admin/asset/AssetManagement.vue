@@ -1,12 +1,12 @@
 <template>
   <div class="asset-wrapper">
     <h2 class="page-title">자원 목록 조회</h2>
-    <!-- 🔹 상단 필터 영역 -->
+
+    <!-- 상단 필터 영역 -->
     <div class="filters">
       <div class="cell">
         <RootDropDownMenu v-model="building">
           <option value="">전체</option>
-          <!-- 전체 옵션 추가 -->
         </RootDropDownMenu>
       </div>
       <div class="cell"><OneDepthDropDownMenu v-model="location" :buildingId="building" /></div>
@@ -21,69 +21,85 @@
       <button class="search-btn" @click="loadAssets">검색</button>
     </div>
 
-    <!-- 🔹 자원 목록 테이블 -->
-    <table class="asset-table">
-      <thead>
-        <tr>
-          <th>자원유형</th>
-          <th>자원상태</th>
-          <th>자원명</th>
-          <th>카테고리</th>
-          <th>승인 유무</th>
-          <th>예약 가능</th>
-          <th>버전</th>
-          <th>편집</th>
-        </tr>
-      </thead>
+    <!-- 테이블 -->
+    <el-table :data="assets" stripe border style="width: 100%" :empty-text="'데이터가 없습니다.'">
+      <!-- 자원유형 -->
+      <el-table-column label="자원유형">
+        <template #default="scope">
+          {{ typeMap[scope.row.type] || scope.row.type }}
+        </template>
+      </el-table-column>
 
-      <tbody>
-        <tr v-if="assets.length === 0">
-          <td colspan="8" class="empty">데이터가 없습니다.</td>
-        </tr>
+      <!-- 자원상태 -->
+      <el-table-column label="자원상태">
+        <template #default="scope">
+          {{ statusMap[scope.row.status] || scope.row.status }}
+        </template>
+      </el-table-column>
 
-        <tr v-for="a in assets" :key="a.assetId" @click="goDetail(a.assetId)">
-          <td>{{ a.type }}</td>
-          <td>{{ a.status }}</td>
-          <td>{{ a.name }}</td>
-          <td>{{ a.categoryName }}</td>
-          <td>{{ a.approved ? '승인됨' : '미승인' }}</td>
-          <td>{{ a.available ? '가능' : '불가' }}</td>
-          <td>{{ a.version }}</td>
+      <!-- 자원명 -->
+      <el-table-column prop="name" label="자원명" />
 
-          <!-- 편집 버튼 -->
-          <td>
-            <button class="edit-btn" @click.stop="editAsset(a)">수정</button>
-            /
-            <button class="move-btn" @click.stop="openMoveModal(a)">이동</button>
-            /
-            <button class="delete-btn" @click.stop="deleteAsset(a)">삭제</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- 카테고리 -->
+      <el-table-column prop="categoryName" label="카테고리" />
 
-    <!-- 🔹 페이지네이션 -->
+      <!-- 승인 유무 -->
+      <el-table-column label="승인 유무">
+        <template #default="scope">
+          <el-tag :type="scope.row.needApproval ? 'warning' : 'success'" size="small">
+            {{ scope.row.needApproval ? '승인 필요' : '승인 생략' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <!-- 예약 가능 -->
+      <el-table-column label="예약 가능">
+        <template #default="scope">
+          <el-tag :type="scope.row.status === 'AVAILABLE' ? 'success' : 'danger'" size="small">
+            {{ scope.row.status === 'AVAILABLE' ? '가능' : '불가' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <!-- 버전 -->
+      <el-table-column prop="version" label="버전" />
+
+      <!-- 편집 버튼 -->
+      <el-table-column label="편집">
+        <template #default="scope">
+          <div class="actions">
+            <el-button type="primary" text size="small" @click.stop="editAsset(scope.row)"
+              >수정</el-button
+            >
+            <el-button type="success" text size="small" @click.stop="openMoveModal(scope.row)"
+              >이동</el-button
+            >
+            <el-button type="danger" text size="small" @click.stop="deleteAsset(scope.row)"
+              >삭제</el-button
+            >
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 페이지네이션 (팀원 스타일) -->
     <div class="pagination">
-      <button :disabled="page === 0" @click="changePage(page - 1)">〈</button>
-
-      <button
-        v-for="i in totalPages"
-        :key="i"
-        :class="['page-btn', { active: page === i - 1 }]"
-        @click="changePage(i - 1)"
-      >
-        {{ i }}
-      </button>
-
-      <button :disabled="page + 1 >= totalPages" @click="changePage(page + 1)">〉</button>
+      <el-pagination
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="size"
+        :current-page="page + 1"
+        @current-change="changePageFromEl"
+      />
     </div>
 
-    <!-- 🔹 하단 버튼 -->
+    <!-- 하단 버튼 -->
     <div class="bottom-actions">
       <button class="category-btn" @click="goCategory">카테고리 관리</button>
       <button class="create-btn" @click="createAsset">자원 등록</button>
     </div>
 
+    <!-- 모달 -->
     <ConfirmModal
       v-if="showDeleteModal"
       title="자원 삭제"
@@ -99,7 +115,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-// import { categoryApi } from '@/api/categoryApi'
 import api from '@/api/axios'
 import { assetApi } from '@/api/assetApi'
 
@@ -122,16 +137,23 @@ const router = useRouter()
 
 const page = ref(0)
 const size = ref(10)
-
+const total = ref(0)
 const assets = ref([])
-const totalPages = ref(1)
-
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
-
-// 자원 이동에 필요한 변수
 const showMoveModal = ref(false)
 const moveTarget = ref(null)
+
+const typeMap = {
+  STATIC: '정적 자원',
+  DYNAMIC: '동적 자원',
+}
+
+const statusMap = {
+  AVAILABLE: '사용 가능',
+  UNAVAILABLE: '사용 불가',
+  MAINTENANCE: '점검중',
+}
 
 async function loadAssets() {
   const res = await api.get('/assets/descendants', {
@@ -146,16 +168,15 @@ async function loadAssets() {
       keyword: keyword.value || null,
     },
   })
-
   assets.value = res.data.content
-  totalPages.value = res.data.totalPages
+  total.value = res.data.totalElements
 }
 
 async function confirmDelete() {
   try {
     await assetApi.delete(deleteTarget.value.assetId)
     showDeleteModal.value = false
-    loadAssets() // 목록 새로고침
+    loadAssets()
   } catch (err) {
     alert(err.response?.data?.message || '삭제 실패')
   }
@@ -164,18 +185,16 @@ async function confirmDelete() {
 async function confirmMove(newParentName) {
   try {
     await assetApi.move(moveTarget.value.assetId, newParentName)
-
     alert('자원이 이동되었습니다.')
     closeMoveModal()
-    loadAssets() // 목록 새로고침
+    loadAssets()
   } catch (err) {
     alert(err.response?.data?.message || '이동 실패')
-    console.error(err)
   }
 }
 
-function changePage(p) {
-  page.value = p
+function changePageFromEl(newPage) {
+  page.value = newPage - 1
   loadAssets()
 }
 
@@ -189,10 +208,6 @@ function editAsset(asset) {
 
 function createAsset() {
   router.push('/admin/assets/create')
-}
-
-function goDetail(assetId) {
-  router.push(`/admin/assets/${assetId}`)
 }
 
 function deleteAsset(asset) {
@@ -215,6 +230,7 @@ onMounted(loadAssets)
 <style scoped>
 .asset-wrapper {
   width: 100%;
+  overflow-x: auto; /* 가로 스크롤 허용 */
 }
 
 .page-title {
@@ -229,31 +245,22 @@ onMounted(loadAssets)
   gap: 12px;
   width: 100%;
   align-items: center;
+  margin-bottom: 20px;
 }
 
-/* 드롭다운/검색창 공통 비율 */
 .cell {
-  flex: 1; /* 비율 기반으로 확대/축소 */
-  min-width: 120px; /* 최소 폭만 지정 */
+  flex: 1;
+  min-width: 120px;
 }
 
-/* 드롭다운 내부의 select 는 셀 폭에 맞게 꽉 채움 */
-.cell select {
+.cell select,
+.search-box input {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
 
-/* 검색 입력창 비율 처리 */
-.search-box input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-/* 검색 버튼은 고정폭 */
 .search-btn {
   padding: 10px 18px;
   background: #c7dbcc;
@@ -263,67 +270,18 @@ onMounted(loadAssets)
   white-space: nowrap;
 }
 
-/* 테이블 */
-.asset-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-.asset-table tbody tr:hover {
-  background-color: #f5f5f5;
-  cursor: pointer;
-}
-
-.asset-table th {
-  background: #f1f1f1;
-  padding: 10px;
-  text-align: left;
-}
-
-.asset-table td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.empty {
-  text-align: center;
-  color: #888;
-}
-
-/* 페이지네이션 */
+/* ===== 페이지네이션 팀원 스타일 ===== */
 .pagination {
+  display: flex;
+  justify-content: center;
   margin-top: 20px;
-  text-align: center;
 }
 
-.page-btn {
-  margin: 0 4px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.page-btn.active {
-  background: #c7dbcc;
-}
-
-/* 하단 버튼들 */
 .bottom-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 25px;
-}
-
-.create-btn {
-  padding: 10px 18px;
-  background: #c7dbcc;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  margin-top: 20px;
 }
 
 .category-btn {
@@ -334,31 +292,20 @@ onMounted(loadAssets)
   cursor: pointer;
 }
 
-.edit-btn {
-  color: #2d6cdf;
-  cursor: pointer;
-  background: none;
+.create-btn {
+  padding: 10px 18px;
+  background: #c7dbcc;
   border: none;
-  outline: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.delete-btn {
-  color: #d9534f;
-  cursor: pointer;
-  background: none;
-  border: none;
-  outline: none;
+.actions {
+  display: flex;
+  gap: 8px; /* 버튼 간 간격 */
+  white-space: nowrap; /* 줄 바꿈 방지 */
 }
-
-.move-btn {
-  color: #2f5d2f;
-  cursor: pointer;
-  background: none;
-  border: none;
-  outline: none;
+.actions button {
+  flex-shrink: 0; /* 버튼이 줄어들지 않도록 */
 }
-
-/* .move-btn:hover {
-  background-color: #cfe3cf;
-} */
 </style>
