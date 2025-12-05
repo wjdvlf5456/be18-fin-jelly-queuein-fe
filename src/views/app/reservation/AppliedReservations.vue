@@ -36,8 +36,8 @@
       v-model:visible="modalOpen"
       :asset="reservationDetail"
       @close="closeModal"
-      @save-reason="onSaveReason"
-    />
+      @save-reason="updateReason" 
+    /><!-- 부모에서 emit reason 처리-->
   </div>
 </template>
 
@@ -140,30 +140,11 @@ function closeModal() {
   modalOpen.value = false
   reservationDetail.value = null
 }
-async function handleSaveReason(reason) {
-  try {
-    await api.patch(`/reservations/${reservationDetail.value.id}/approve`, {
-      version: reservationDetail.value.version,
-      reason: reason
-    })
 
-    reservationDetail.value.reason = reason
-    fetchAppliedReservations()
-  } catch (err) {
-    console.error("승인/거절 사유 저장 실패:", err)
-  }
-}
-const onSaveReason = ({ reservationId, reason }) => {
-  const idx = tableData.value.findIndex(r => r.reservationId === reservationId)
-  if (idx !== -1) {
-    tableData.value[idx].reason = reason
-    tableData.value[idx].respondentName = currentUserName.value   
-  }
-
-  reservationDetail.value.reason = reason
-  reservationDetail.value.approver = currentUserName.value       // 상세에도 반영
-
-  modalOpen.value = false
+// 부모 컴포넌트 (AppliedReservations.vue)
+const updateReason = ({ reservationId, reason }) => {
+  const row = tableData.value.find(r => r.id === reservationId) 
+  if (row) row.reason = reason
 }
 
 async function onApprove(row) {
@@ -201,6 +182,7 @@ async function onReject(row) {
     console.error("거절 실패:", err)
   }
 }
+
 function getKSTDateString() {
   const offset = 9 * 60 * 60 * 1000
   const kst = new Date(Date.now() + offset)

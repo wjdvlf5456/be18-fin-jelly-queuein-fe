@@ -48,7 +48,13 @@
     </el-table-column>
 
     <!-- 사유 -->
-    <el-table-column prop="reason" label="사유" min-width="150" align="center" />
+    <el-table-column label="사유" min-width="150" align="center">
+      <template #default="scope">
+        {{ scope.row.reason || "-" }}
+      </template>
+    </el-table-column>
+
+
   </el-table>
 
   <!-- Pagination -->
@@ -83,6 +89,7 @@ const props = defineProps({
     }) 
   }
 })
+const localRows = ref([...props.rows])
 
 const rows = ref([])
 const total = ref(0)
@@ -125,6 +132,12 @@ watch(
   },
   { deep: true, immediate: true }
 )
+
+watch(() => props.rows, (val) => {
+  localRows.value = [...val]
+}, { deep: true, immediate: true })
+
+// 모달에서 입력한 임시 사유 업데이트
 
 </script>
 

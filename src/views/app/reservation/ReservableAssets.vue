@@ -23,6 +23,7 @@
     @change="(f) => { 
       if (f.date) searchParams.date = f.date  
       searchParams.categoryName = f.categoryName
+      searchParams.assetType = f.assetType
       searchParams.assetStatus = f.assetStatus
       searchParams.layerZero = f.layerZero
       searchParams.layerOne = f.layerOne

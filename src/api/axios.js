@@ -74,8 +74,33 @@ api.interceptors.response.use(
       }
     }
 
+        if (error.response?.data) {
+      const data = error.response.data
+      // data.code 또는 data.message 활용
+      if (data.message) {
+        ElMessage.error(data.message)
+      } else if (data.code) {
+        // 필요시 코드별 분기
+        switch (data.code) {
+          case 'RESERVATION_ALREADY_APPROVED':
+            ElMessage.error('이미 승인된 예약입니다.')
+            break
+          case 'RESERVATION_NOT_FOUND':
+            ElMessage.error('예약 정보를 찾을 수 없습니다.')
+            break
+          default:
+            ElMessage.error('알 수 없는 오류가 발생했습니다.')
+        }
+      } else {
+        ElMessage.error('서버 오류가 발생했습니다.')
+      }
+    } else {
+      ElMessage.error('서버와 연결할 수 없습니다.')
+    }
+
     return Promise.reject(error)
   }
+
 )
 
 export default api

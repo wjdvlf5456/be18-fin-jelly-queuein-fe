@@ -33,7 +33,7 @@ function isActiveStartsWith(basePath) {
       <router-link
         to="/app/reservations/me"
         class="item"
-        :class="{ active: isActiveStartsWith('/app') }"
+        :class="{ active: isActiveStartsWith('/app/reservations/me') }"
         @click="$emit('close-sidebar')"
       >
         <img src="@/assets/icons/reserve.svg" class="icon" />
@@ -44,7 +44,7 @@ function isActiveStartsWith(basePath) {
       <router-link
         to="/app/reservations/monthly"
         class="item"
-        :class="{ active: isActiveStartsWith('/app/schedule') }"
+        :class="{ active: isActiveStartsWith('/app/reservations/monthly') }"
         @click="$emit('close-sidebar')"
       >
         <img src="@/assets/icons/schedule.svg" class="icon" />

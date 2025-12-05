@@ -134,15 +134,15 @@ const close = () => emit("close")
 ------------------------------------------- */
 const editedReason = ref("")
 
-watch(
-  () => props.asset,
+watch( //모달 열릴 때
+  () => props.asset, //props.asset의 기존 값 가져옴
   (val) => {
     editedReason.value = val?.reason ?? ""
   },
   { immediate: true }
 )
 
-const saveReason = () => {
+const saveReason = () => { //저장 버튼 눌렀을 때 id, reason emit -> 부모 컴포넌트에서 받는 용도
   emit("save-reason", {
     reservationId: props.asset?.id,
     reason: editedReason.value

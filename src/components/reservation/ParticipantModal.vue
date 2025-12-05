@@ -118,7 +118,7 @@ const submitSelection = () => {
         <input
           v-model="keyword"
           type="text"
-          placeholder="검색어를 입력해주세요"
+          placeholder="사용자명을 입력해주세요"
           class="search-input"
         />
         <svg class="search-icon" fill="none" viewBox="0 0 24 24">
