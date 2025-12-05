@@ -1,96 +1,122 @@
 <template>
   <el-row :gutter="12" class="filter-row">
-
     <!-- 날짜 선택 (Element Plus 유지) -->
-    <el-col :span="4">
-      <el-date-picker
-        v-model="filters.date"
-        type="date"
-        placeholder="날짜 선택"
-        format="YYYY-MM-DD"
-        value-format="YYYY-MM-DD"
-        @change="emitChange"
-      />
-    </el-col>
+
+    <div class="filters">
+      <el-col :span="4">
+        <el-date-picker
+          v-model="filters.date"
+          type="date"
+          placeholder="날짜 선택"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
+          @change="emitChange"
+        />
+      </el-col>
+      <div class="cell">
+        <RootDropDownMenu v-model="filters.layerZero" @update:modelValue="onBuildingChange">
+          <option value="">전체</option>
+          <!-- 전체 옵션 추가 -->
+        </RootDropDownMenu>
+      </div>
+      <div class="cell">
+        <OneDepthDropDownMenu
+          v-model="filters.layerOne"
+          :buildingId="filters.layerZero"
+          @update:modelValue="emitChange"
+        />
+      </div>
+      <div class="cell">
+        <CategoryDropDownMenu v-model="filters.categoryName" @update:modelValue="emitChange" />
+      </div>
+      <div class="cell">
+        <AssetTypeDropdown v-model="filters.assetType" @update:modelValue="emitChange" />
+      </div>
+      <div class="cell search-box">
+        <el-input v-model="filters.assetName" placeholder="자원명 검색" />
+      </div>
+
+      <button class="search-btn" @click="onSearch">검색</button>
+    </div>
 
     <!-- 자원 유형 -->
-    <el-col :span="4">
+    <!-- <el-col :span="4">
       <AssetTypeDropdown
         v-model="filters.assetType"
         placeholder="자원 유형"
         @update:modelValue="emitChange"
       />
-    </el-col>
+    </el-col> -->
 
     <!-- 자원 상태 -->
-    <el-col :span="4">
+    <!-- <el-col :span="4">
       <AssetStatusDropdown
         v-model="filters.assetStatus"
         placeholder="자원 상태"
         @update:modelValue="emitChange"
       />
-    </el-col>
+    </el-col> -->
 
     <!-- 카테고리 -->
-    <el-col :span="4">
+    <!-- <el-col :span="4">
       <CategoryDropdown
         v-model="filters.categoryName"
         placeholder="카테고리"
         @update:modelValue="emitChange"
       />
-    </el-col>
-
+    </el-col> -->
 
     <!-- 1계층 (위치: 사옥 선택 시 활성화) -->
-    <el-col :span="4">
+    <!-- <el-col :span="4">
       <LocationDropdown
         v-model="filters.layerOne"
         :buildingId="filters.layerZero"
         @update:modelValue="emitChange"
       />
-    </el-col>
+    </el-col> -->
 
-        <!-- 0계층 (사옥) -->
-    <el-col :span="4">
-      <BuildingDropdown
-        v-model="filters.layerZero"
-        @update:modelValue="onBuildingChange"
-      />
-    </el-col>
-
+    <!-- 0계층 (사옥) -->
+    <!-- <el-col :span="4">
+      <BuildingDropdown v-model="filters.layerZero" @update:modelValue="onBuildingChange" />
+    </el-col> -->
   </el-row>
 </template>
 
 <script setup>
-import { ref, watch } from "vue"
+import { ref, watch } from 'vue'
 
-import AssetTypeDropdown from "@/components/common/AssetTypeDropdown.vue"
-import AssetStatusDropdown from "@/components/common/AssetStatusDropdown.vue"
-import CategoryDropdown from "@/components/common/CategoryDropDownMenu.vue"
-import BuildingDropdown from "@/components/common/OneDepthDropDownMenu.vue"
-import LocationDropdown from "@/components/common/RootDropDownMenu.vue"
+import AssetTypeDropdown from '@/components/common/AssetTypeDropdown.vue'
+import CategoryDropDownMenu from '@/components/common/CategoryDropDownMenu.vue'
+import OneDepthDropDownMenu from '@/components/common/OneDepthDropDownMenu.vue'
+import RootDropDownMenu from '@/components/common/RootDropDownMenu.vue'
 
 // 부모에게 필터 변경 emit
-const emit = defineEmits(["change"])
-const today = new Date().toLocaleDateString("en-CA")
+const emit = defineEmits(['change'])
+const today = new Date().toLocaleDateString('en-CA')
 
 const filters = ref({
   date: today,
-  assetType: "",
-  assetStatus: "",
-  categoryName: "",
-  layerZero: "",
-  layerOne: ""
+  assetType: '',
+  assetStatus: '',
+  categoryName: '',
+  layerZero: '',
+  layerOne: '',
+  assetName: '',
 })
 
 function emitChange() {
-  emit("change", { ...filters.value })
+  emit('change', { ...filters.value })
 }
 
 // 건물(0계층) 변경 시 위치 초기화 + emit
 function onBuildingChange(val) {
   filters.value.layerZero = val
-  filters.value.layerOne = "" // 위치 초기화
+  filters.value.layerOne = '' // 위치 초기화
+  emitChange()
+}
+
+// 검색 버튼 클릭 시 emit
+function onSearch() {
   emitChange()
 }
 
@@ -98,7 +124,7 @@ function onBuildingChange(val) {
 watch(
   () => filters.value.date,
   () => emitChange(),
-  { immediate: true }
+  { immediate: true },
 )
 </script>
 
@@ -133,7 +159,6 @@ watch(
   padding-right: 12px !important;
 }
 
-
 /* 🔥 반응형: 화면이 좁아지면 3등분 */
 @media (max-width: 1200px) {
   .filter-row > .el-col {
@@ -155,4 +180,43 @@ watch(
   }
 }
 
+/* 필터 영역 */
+.filters {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+}
+
+/* 드롭다운/검색창 공통 비율 */
+.cell {
+  flex: 1; /* 비율 기반으로 확대/축소 */
+  min-width: 120px; /* 최소 폭만 지정 */
+}
+
+/* 드롭다운 내부의 select 는 셀 폭에 맞게 꽉 채움 */
+.cell select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* 검색 입력창 비율 처리 */
+.search-box input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* 검색 버튼은 고정폭 */
+.search-btn {
+  padding: 10px 18px;
+  background: #c7dbcc;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
 </style>

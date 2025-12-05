@@ -35,7 +35,7 @@ function closeHover() {
       :open="isSidebarOpen"
       @hover-open="openHover"
       @hover-close="closeHover"
-      @close-sidebar="isFixedOpen = false" 
+      @close-sidebar="isFixedOpen = false"
     />
 
     <main class="content">
@@ -52,7 +52,7 @@ function closeHover() {
 }
 
 .content {
-  padding: 40px;
+  padding: 5px 20px;
 }
 
 .overlay {
