@@ -2,7 +2,6 @@
   <div class="category-page">
     <!-- 페이지 제목 -->
     <h2 class="page-title">자원 카테고리</h2>
-
     <!-- 상단 필터 영역 (필요하면 여기에 추가 가능) -->
 
     <!-- 카테고리 목록 테이블 -->
@@ -52,7 +51,8 @@
 
     <!-- 생성 버튼 -->
     <div class="bottom-actions">
-      <el-button type="success" @click="openCreateModal">카테고리 생성</el-button>
+      <button class="asset-btn" @click="goAsset">자원 관리</button>
+      <button class="create-btn" @click="openCreateModal">카테고리 생성</button>
     </div>
 
     <!-- 모달들 -->
@@ -85,10 +85,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { categoryApi } from '@/api/categoryApi'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import CategoryFormModal from './CategoryFormModal.vue'
 
+const router = useRouter()
 const categories = ref([])
 const page = ref(0)
 const size = ref(10)
@@ -153,6 +155,9 @@ function deleteCategory(c) {
   showDeleteModal.value = true
 }
 
+function goAsset() {
+  router.push('/admin/assets/list')
+}
 onMounted(loadCategories)
 </script>
 
@@ -170,8 +175,25 @@ onMounted(loadCategories)
 }
 
 .bottom-actions {
-  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.asset-btn {
+  padding: 10px 18px;
+  background: #ddd;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.create-btn {
+  padding: 10px 18px;
+  background: #c7dbcc;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 </style>

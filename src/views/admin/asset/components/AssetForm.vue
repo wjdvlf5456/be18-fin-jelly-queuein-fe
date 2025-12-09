@@ -1,6 +1,6 @@
 <template>
   <div class="asset-form-wrapper">
-    <h2 class="title">자원 생성</h2>
+    <h2 class="title">{{ submitText }}</h2>
 
     <table class="form-table">
       <tbody>

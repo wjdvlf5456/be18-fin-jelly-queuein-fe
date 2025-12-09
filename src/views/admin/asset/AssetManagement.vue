@@ -22,7 +22,14 @@
     </div>
 
     <!-- 테이블 -->
-    <el-table :data="assets" stripe border style="width: 100%" :empty-text="'데이터가 없습니다.'">
+    <el-table
+      :data="assets"
+      stripe
+      border
+      style="width: 100%"
+      :empty-text="'데이터가 없습니다.'"
+      @row-click="goAssetDetail"
+    >
       <!-- 자원유형 -->
       <el-table-column label="자원유형">
         <template #default="scope">
@@ -199,7 +206,7 @@ function changePageFromEl(newPage) {
 }
 
 function goCategory() {
-  router.push('/admin/categories')
+  router.push('/admin/assets/categories')
 }
 
 function editAsset(asset) {
@@ -222,6 +229,10 @@ function openMoveModal(asset) {
 
 function closeMoveModal() {
   showMoveModal.value = false
+}
+
+function goAssetDetail(row) {
+  router.push(`/admin/assets/${row.assetId}`) // 상세 페이지 경로
 }
 
 onMounted(loadAssets)
