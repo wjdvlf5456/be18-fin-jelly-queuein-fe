@@ -1,74 +1,93 @@
 <template>
   <div>
+    <!-- 📌 데이터 테이블 -->
+    <el-table
+      :data="rows"
+      border
+      style="width: 100%"
+      highlight-current-row
+    >
+      <!-- 자원명 -->
+      <el-table-column
+        prop="assetName"
+        label="자원명"
+        min-width="180"
+        align="center"
+      />
 
-    <div v-if="loading" class="loading">
-      데이터를 불러오는 중...
-    </div>
+      <!-- 예약 시작 -->
+      <el-table-column label="예약 시작" min-width="160" align="center">
+        <template #default="scope">
+          {{ toKST(scope.row.reservationStartAt) }}
+        </template>
+      </el-table-column>
 
-    <table v-else class="usage-table">
-      <thead>
-        <tr>
-          <th>자원명</th>
-          <th>예약 시작</th>
-          <th>예약 종료</th>
-          <th>예약 시간(분)</th>
-          <th>실제 시작</th>
-          <th>실제 종료</th>
-          <th>실사용 시간(분)</th>
-          <th>사용률(%)</th>
-          <th style="width: 60px;">상세</th>
-        </tr>
-      </thead>
+      <!-- 예약 종료 -->
+      <el-table-column label="예약 종료" min-width="160" align="center">
+        <template #default="scope">
+          {{ toKST(scope.row.reservationEndAt) }}
+        </template>
+      </el-table-column>
 
-      <tbody>
-        <tr
-          v-for="row in rows"
-          :key="row.usageHistoryId"
-        >
+      <!-- 예약 시간 -->
+      <el-table-column
+        prop="reservationMinutes"
+        label="예약 시간(분)"
+        min-width="150"
+        align="center"
+      />
 
-          <td>{{ row.assetName }}</td>
-          <td>{{ toKST(row.reservationStartAt) }}</td>
-          <td>{{ toKST(row.reservationEndAt) }}</td>
-          <td>{{ row.reservationMinutes }}</td>
-          <td>{{ toKST(row.actualStartAt) }}</td>
-          <td>{{ toKST(row.actualEndAt) }}</td>
-          <td>{{ row.actualMinutes }}</td>
-          <td>{{ Math.round(row.usageRatio * 100) }}%</td>
+      <!-- 실제 시작 -->
+      <el-table-column label="실제 시작" min-width="160" align="center">
+        <template #default="scope">
+          {{ toKST(scope.row.actualStartAt) }}
+        </template>
+      </el-table-column>
 
-          <!-- 조회 링크 형태로 변경 -->
-          <td class="detail-cell">
-            <span class="detail-link" @click="openDetail(row.usageHistoryId)">조회</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- 실제 종료 -->
+      <el-table-column label="실제 종료" min-width="160" align="center">
+        <template #default="scope">
+          {{ toKST(scope.row.actualEndAt) }}
+        </template>
+      </el-table-column>
 
-    <!-- 페이징 -->
+      <!-- 실사용 시간 -->
+      <el-table-column
+        prop="actualMinutes"
+        label="실사용 시간(분)"
+        min-width="150"
+        align="center"
+      />
+
+      <!-- 사용률 -->
+      <el-table-column label="사용률(%)" min-width="120" align="center">
+        <template #default="scope">
+          {{ Math.round(scope.row.usageRatio * 100) }}%
+        </template>
+      </el-table-column>
+
+      <!-- 상세 버튼 -->
+      <el-table-column label="상세" width="100" align="center">
+        <template #default="scope">
+          <el-button type="primary" link @click.stop="openDetail(scope.row.usageHistoryId)">
+            조회
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 📌 Pagination -->
     <div class="pagination">
-      <button class="nav-btn" :disabled="currentPage === 0" @click="goPrevChunk">
-        <span class="arrow">&lt;</span>
-      </button>
-
-      <span
-        v-for="i in pagesToShow"
-        :key="i"
-        class="page-btn"
-        :class="{ active: currentPage === i - 1 }"
-        @click="changePage(i - 1)"
-      >
-        {{ i }}
-      </span>
-
-      <button
-        class="nav-btn"
-        :disabled="currentPage === totalPages - 1"
-        @click="goNextChunk"
-      >
-        <span class="arrow">&gt;</span>
-      </button>
+      <el-pagination
+        layout="prev, pager, next"
+        :total="pageInfo.totalPages * pageInfo.size"
+        :page-size="pageInfo.size"
+        :current-page="pageInfo.page + 1"
+        @current-change="changePage"
+      />
     </div>
 
-    <!-- 상세 모달 -->
+    <!-- 📌 상세 모달 (테이블 내부에서 처리) -->
     <div v-if="showDetail" class="modal-backdrop" @click="closeDetail"></div>
 
     <div v-if="showDetail" class="detail-modal">
@@ -106,63 +125,18 @@
   </div>
 </template>
 
+
 <script setup>
+import { ref } from "vue"
 import api from "@/api/axios"
-import { computed, ref } from "vue"
 
 const props = defineProps({
   rows: Array,
-  loading: Boolean,
   pageInfo: Object,
 })
-
 const emit = defineEmits(["changePage"])
 
-const chunkSize = 5
-
-const currentPage = computed(() => props.pageInfo.page)
-const totalPages = computed(() => props.pageInfo.totalPages)
-
-const chunkStart = computed(() => {
-  return Math.floor(currentPage.value / chunkSize) * chunkSize
-})
-
-const chunkEnd = computed(() => {
-  return Math.min(chunkStart.value + chunkSize, totalPages.value)
-})
-
-const pagesToShow = computed(() => {
-  let arr = []
-  for (let i = chunkStart.value + 1; i <= chunkEnd.value; i++) {
-    arr.push(i)
-  }
-  return arr
-})
-
-function changePage(page) {
-  emit("changePage", page)
-}
-
-function goPrevChunk() {
-  const target = Math.max(chunkStart.value - 1, 0)
-  emit("changePage", target)
-}
-
-// 날짜 변환 
-function toKST(dateString) {
-  if (!dateString) return "-";
-  const date = new Date(dateString); // UTC 기반 Date 생성
-  // KST = UTC + 9
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  return kst.toISOString().replace("T", " ").slice(0, 16); 
-}
-
-function goNextChunk() {
-  const target = Math.min(chunkEnd.value, totalPages.value - 1)
-  emit("changePage", target)
-}
-
-/* 상세 모달 */
+/* 🔥 조회 모달 상태 */
 const showDetail = ref(false)
 const detailData = ref({})
 
@@ -172,97 +146,35 @@ async function openDetail(id) {
     detailData.value = data
     showDetail.value = true
   } catch (err) {
-    console.error("상세 API 오류:", err)
+    console.error("상세 조회 실패:", err)
   }
 }
 
 function closeDetail() {
   showDetail.value = false
 }
+
+function toKST(date) {
+  if (!date) return "-"
+  const d = new Date(date)
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+  return kst.toISOString().replace("T", " ").slice(0, 16)
+}
+
+function changePage(newPage) {
+  emit("changePage", newPage - 1)
+}
 </script>
 
+
 <style scoped>
-/* 테이블 */
-.usage-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 18px;
-  background: white;
-  font-size: 14px;
-}
-
-.usage-table thead tr {
-  background: #D9E9CF;
-  border-bottom: 2px solid #E0E6E0;
-}
-
-.usage-table th {
-  padding: 12px;
-  font-weight: 700;
-  color: #565D6D;
-  text-align: center;
-  font-size: 14px;
-}
-
-.usage-table td {
-  padding: 14px 10px;
-  border-bottom: 1px solid #EFEFEF;
-  text-align: center;
-  color: #333;
-  font-size: 14px;
-}
-
-/* hover */
-.usage-table tbody tr:hover {
-  background: #F6F6F6;
-}
-
-/* 조회 링크 */
-.detail-cell {
-  text-align: left !important;
-  padding-left: 12px;
-}
-
-.detail-link {
-  color: #1A73E8;
-  cursor: pointer;
-  font-size: 14px;
-  text-decoration: underline;
-}
-
-.detail-link:hover {
-  color: #1257b0;
-}
-
-/* 페이징 */
 .pagination {
-  margin-top: 20px;
   display: flex;
   justify-content: center;
-  gap: 8px;
+  margin-top: 20px;
 }
 
-.page-btn {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.page-btn.active {
-  background: rgb(255, 255, 255);
-  color: #00A950;
-  border-color: #00A950;
-}
-
-.nav-btn {
-  padding: 6px 10px;
-  border-radius: 4px;
-  background: white;
-  border: 1px solid #ccc;
-}
-
-/* 모달 배경 */
+/* --- 여기 아래는 기존 모달 CSS 그대로 유지 --- */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -273,7 +185,6 @@ function closeDetail() {
   z-index: 998;
 }
 
-/* 모달 */
 .detail-modal {
   position: fixed;
   top: 50%;
@@ -324,4 +235,20 @@ function closeDetail() {
 .modal-info p {
   margin: 20px 0;
 }
+
+:deep(.el-table__header-wrapper th) {
+  background-color: #D9E9CF !important;
+  color: #525B63 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+}
+
+:deep(.el-table__header th .cell) {
+  font-weight: 500 !important;   /* 확실하게 굵게 */
+  color: #333 !important;
+  font-size: 15px !important;
+}
+
+
 </style>

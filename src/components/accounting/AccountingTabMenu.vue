@@ -1,92 +1,111 @@
-<!-- file: src/components/accounting/AccountingTabMenu.vue -->
 <template>
-  <div class="tab-wrapper">
-    <div class="tab-menu">
-      <router-link
-        to="/admin/accounting/usage-history"
-        class="tab"
-        :class="{ active: isActive('/admin/accounting/usage-history') }"
-      >
-        자원 사용 기록
-      </router-link>
-
-      <router-link
-        to="/admin/accounting/usage-trend"
-        class="tab"
-        :class="{ active: isActive('/admin/accounting/usage-trend') }"
-      >
-        사용 추이
-      </router-link>
-
-      <router-link
-        to="/admin/accounting/performance"
-        class="tab"
-        :class="{ active: isActive('/admin/accounting/performance') }"
-      >
-        운영 성과 분석
-      </router-link>
-
-      <router-link
-        to="/admin/accounting/quarter"
-        class="tab"
-        :class="{ active: isActive('/admin/accounting/quarter') }"
-      >
-        분기 정산
-      </router-link>
-    </div>
-
-    <div class="bottom-line"></div>
+  <div class="tab-full-wrapper">
+    <el-tabs
+      v-model="active"
+      class="accounting-tabs"
+      @tab-click="onTabClick"
+      type="line"
+    >
+      <el-tab-pane label="자원 사용 기록" name="history" />
+      <el-tab-pane label="사용 추이" name="trend" />
+      <el-tab-pane label="운영 성과 분석" name="performance" />
+      <el-tab-pane label="분기 정산" name="quarter" />
+    </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { useRoute } from "vue-router"
+import { ref, watch, nextTick, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
 const route = useRoute()
 
-function isActive(path) {
-  return route.path.startsWith(path)
+// 라우트 기반으로 활성 탭 매칭
+const active = ref(getTabName(route.path))
+
+function getTabName(path) {
+  if (path.includes('/admin/accounting/usage-history')) return 'history'
+  if (path.includes('/admin/accounting/usage-trend')) return 'trend'
+  if (path.includes('/admin/accounting/performance')) return 'performance'
+  if (path.includes('/admin/accounting/quarter')) return 'quarter'
+  return 'history'
 }
+
+// 탭 클릭 시 라우팅 처리
+function onTabClick(tab) {
+  switch (tab.props.name) {
+    case 'history':
+      router.push('/admin/accounting/usage-history')
+      break
+    case 'trend':
+      router.push('/admin/accounting/usage-trend')
+      break
+    case 'performance':
+      router.push('/admin/accounting/performance')
+      break
+    case 'quarter':
+      router.push('/admin/accounting/quarter')
+      break
+  }
+}
+
+// 탭 active-bar 재계산
+onMounted(async () => {
+  await nextTick()
+})
+
+// 라우팅 변경되면 탭 활성 상태 갱신
+watch(
+  () => route.path,
+  newPath => {
+    active.value = getTabName(newPath)
+  }
+)
 </script>
 
 <style scoped>
-.tab-wrapper {
+/* Element Plus 탭 전체 넓이 */
+/* Element Plus 탭 전체 넓이 */
+.accounting-tabs :deep(.el-tabs__header) {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 20px;
 }
 
-/* 탭 4개를 동일 비율로 꽉 채우기 */
-.tab-menu {
+/* nav flex로 확장 */
+.accounting-tabs :deep(.el-tabs__nav) {
   display: flex;
   width: 100%;
-  justify-content: space-between;
-  text-align: center;
 }
 
-.tab {
+/* ⭐ Element Plus 기본 탭 스타일과 동일하게 설정 */
+.accounting-tabs :deep(.el-tabs__item) {
   flex: 1;
-  padding: 4px 0;
-  font-size: 16px;
-  font-weight: 600;
+  text-align: center;
+
+  /* 예약 탭과 동일하게 맞춘 값 */
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+
   color: #6b7280;
-  text-decoration: none;
-  display: flex;
-  justify-content: center;
-  align-items: center; /* 세로 가운데 정렬 */
-  border-bottom: 3px solid transparent;
 }
 
-/* 활성 탭 */
-.tab.active {
-  color: #00A950;
-  border-bottom: 3px solid #00A950;
+/* hover 초록색 */
+.accounting-tabs :deep(.el-tabs__item:hover) {
+  color: #00A950 !important;
 }
 
-/* 아래 라인 */
-.bottom-line {
-  width: 100%;
-  border-bottom: 1.5px solid #e5e7eb;
-  margin-top: -3px;
+/* active 초록색 */
+.accounting-tabs :deep(.el-tabs__item.is-active) {
+  color: #00A950 !important;
+  font-weight: 600 !important; /* 활성 탭만 조금 더 강조 */
+}
+
+/* active bar 초록색 */
+.accounting-tabs :deep(.el-tabs__active-bar) {
+  background-color: #00A950 !important;
+  height: 3px !important;
 }
 </style>

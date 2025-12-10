@@ -1,5 +1,8 @@
 <template>
-  <div class="usage-history-page">
+  <div class="page-container">
+
+    <!-- 탭 메뉴 -->
+    <AccountingTabMenu />
 
     <h2 class="page-title">자원 사용 기록</h2>
 
@@ -32,20 +35,18 @@ const pageInfo = ref({
   totalPages: 0,
 })
 
-// 🔥 마지막 검색조건 저장
+// 마지막 검색조건 저장
 let lastFilter = {
   startDate: null,
   endDate: null,
   keyword: null
 }
 
-// 🔥 UsageHistoryFilter 가 보내준 값 저장
 async function loadData(filter) {
-  lastFilter = filter  // ⭐ 새로운 필터값 저장
-  await fetchData(0)   // 첫 페이지부터 다시 조회
+  lastFilter = filter
+  await fetchData(0)
 }
 
-// 🔥 서버에서 데이터 조회
 async function fetchData(page) {
   loading.value = true
 
@@ -75,23 +76,22 @@ async function fetchData(page) {
   loading.value = false
 }
 
-// 🔥 페이지 클릭 시 실행
 function changePage(newPage) {
   fetchData(newPage)
 }
 
-// 🔥 초기 1회 조회
+// 초기 1회 조회
 fetchData(0)
 </script>
 
 <style scoped>
-.usage-history-page {
-  padding: 20px;
+.page-container {
+  padding: 24px 32px;
 }
 
 .page-title {
-  font-size: 22px;
+  margin: 10px 0 20px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 20px;
 }
 </style>

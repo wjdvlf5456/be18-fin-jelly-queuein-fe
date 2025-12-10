@@ -89,7 +89,7 @@ import api from "@/api/axios"
 // ---------------------
 // 상태
 // ---------------------
-const yearList = [2023, 2024, 2025, 2026]
+const yearList = ref([])  
 const currentYear = new Date().getFullYear()
 
 const selectedBaseYear = ref(currentYear - 1)   // 작년
@@ -117,11 +117,6 @@ function handleKeyPress(e) {
     closeErrorModal()
   }
 }
-
-onMounted(() => {
-  window.addEventListener("keyup", handleKeyPress)
-  loadData()
-})
 
 onBeforeUnmount(() => {
   window.removeEventListener("keyup", handleKeyPress)
@@ -211,6 +206,32 @@ async function loadData() {
     showErrorModal.value = true
   }
 }
+
+// 연도 조회 API 추가
+
+async function loadYears() {
+  try {
+    const { data } = await api.get("/accounting/usage-history/years")
+
+    // data = { years: [2023, 2024] }
+    yearList.value = data.years
+
+    if (yearList.value.length > 0) {
+      selectedBaseYear.value = yearList.value[0]   // 가장 앞 → 2023
+      selectedCompareYear.value = yearList.value[yearList.value.length - 1] // 가장 뒤 → 2024
+    }
+  } catch (err) {
+    console.error("연도 조회 실패:", err)
+  }
+}
+
+onMounted(async () => {
+  window.addEventListener("keyup", handleKeyPress)
+
+  await loadYears()   // 먼저 연도 로딩
+  await loadData()    // 그다음 사용 추이 로딩
+})
+
 </script>
 
 <style scoped>

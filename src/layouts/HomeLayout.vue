@@ -1,10 +1,32 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
-import { RouterView } from 'vue-router'
 
+import ReservationTabs from '@/components/reservation/ReservationTab.vue'
+import AccountingTabs from '@/components/accounting/AccountingTabMenu.vue'
+
+/* ---------------------------
+   🔥 경로 기반 탭 자동 표시
+--------------------------- */
+const route = useRoute()
+
+const currentTabType = computed(() => {
+  const path = route.path
+
+  if (path.startsWith('/app/reservations/monthly')) return null
+  if (path.startsWith('/app/reservations')) return 'reservation'
+  if (path.startsWith('/admin/accounting')) return 'accounting'
+
+  return null
+})
+
+/* ---------------------------
+   🔥 사이드바 동작 (고정 + hover)
+--------------------------- */
 const isFixedOpen = ref(false)
 const isHoverOpen = ref(false)
 
@@ -25,9 +47,10 @@ function closeHover() {
 
 <template>
   <div class="layout">
+    <!-- 상단 헤더 -->
     <AppHeader @toggle-sidebar="toggleSidebar" />
 
-    <!-- 화면 어두워지는 오버레이 -->
+    <!-- 사이드바 오버레이 -->
     <div v-if="isSidebarOpen" class="overlay" @click="isFixedOpen = false"></div>
 
     <!-- 사이드바 -->
@@ -38,6 +61,13 @@ function closeHover() {
       @close-sidebar="isFixedOpen = false"
     />
 
+    <!-- 🔥 헤더 바로 아래 탭 메뉴 -->
+    <div v-if="currentTabType" class="tab-wrapper">
+      <ReservationTabs v-if="currentTabType === 'reservation'" />
+      <AccountingTabs v-if="currentTabType === 'accounting'" />
+    </div>
+
+    <!-- 메인 컨텐츠 -->
     <main class="content">
       <RouterView />
     </main>
@@ -47,14 +77,44 @@ function closeHover() {
 </template>
 
 <style scoped>
+/* ===== 전체 레이아웃 ===== */
 .layout {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #fff;
 }
 
+/* ===== 상단 탭 메뉴 ===== */
+.tab-wrapper {
+  background: white;
+
+  /* 🔥 모든 padding 제거 → 탭이 상단에 딱 붙음 */
+  padding: 0;
+
+  /* 정산 탭처럼 탭만 표시되도록 */
+  border-bottom: 1px solid #e5e7eb;
+
+  /* 화면 꽉 차게 */
+  width: 100%;
+  box-sizing: border-box;
+
+  z-index: 10;
+}
+
+/* ===== 메인 컨텐츠 ===== */
 .content {
-  padding: 5px 20px;
+  flex: 1;
+  overflow-y: auto;
+
+  /* 화면 내용은 적당히 padding 유지 */
+  padding: 20px;
+  background: white;
+  box-sizing: border-box;
 }
 
+/* ===== 오버레이 ===== */
 .overlay {
   position: fixed;
   inset: 0;
@@ -62,3 +122,4 @@ function closeHover() {
   z-index: 20;
 }
 </style>
+

@@ -1,9 +1,14 @@
 <template>
   <div class="tab-full-wrapper">
-    <el-tabs v-model="active" class="reservation-tabs" @tab-click="onTabClick" type="line">
+    <el-tabs
+      v-model="active"
+      class="reservation-tabs"
+      @tab-click="onTabClick"
+      type="line"
+    >
       <el-tab-pane label="예약 현황" name="status" />
       <el-tab-pane label="예약 가능 자원 목록" name="available" />
-      <el-tab-pane label="예약하기" name="createReservation" />
+      <el-tab-pane label="예약 신청" name="createReservation" />
       <el-tab-pane label="예약 관리" name="applied" />
     </el-tabs>
   </div>
@@ -17,14 +22,14 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const route = useRoute()
 
-// 라우트 기반 활성 탭 선택
+// 활성 탭 설정
 const active = ref(getTabNameByRoute(route.path))
 
 function getTabNameByRoute(path) {
   if (path.includes('/app/reservations/me')) return 'status'
   if (path.includes('/app/reservations/available-assets')) return 'available'
-  if (path.includes('/app/reservations/create-reservation')) return 'create'
-  if (path.includes('/app/reservations/apply')) return 'create'
+  if (path.includes('/app/reservations/create-reservation')) return 'createReservation'
+  if (path.includes('/app/reservations/apply')) return 'createReservation'
   if (path.includes('/admin/reservations/applied')) return 'applied'
   return 'status'
 }
@@ -37,9 +42,9 @@ function onTabClick(tab) {
     case 'available':
       router.push('/app/reservations/available-assets')
       break
-    case 'create':
-      active.value = getTabNameByRoute(route.path)
+    case 'createReservation':
       ElMessage.warning('예약할 자원을 먼저 선택해주세요.')
+      active.value = getTabNameByRoute(route.path)
       break
     case 'applied':
       router.push('/admin/reservations/applied')
@@ -48,41 +53,56 @@ function onTabClick(tab) {
 }
 
 onMounted(async () => {
-  await nextTick() // active-bar 재계산
+  await nextTick()
 })
 
-watch(
-  () => route.path,
-  (newPath) => {
-    active.value = getTabNameByRoute(newPath)
-  },
-)
+watch(() => route.path, newPath => {
+  active.value = getTabNameByRoute(newPath)
+})
 </script>
 
 <style scoped>
-
-/* 헤더 전체 넓이 */
+/* 탭 헤더 전체 가로폭 확장 */
 .reservation-tabs :deep(.el-tabs__header) {
   width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* 기존 코드 제거됨 */
-
-/* 안전한 flex 적용 — nav 에만 적용 */
+/* nav flex 배치 */
 .reservation-tabs :deep(.el-tabs__nav) {
   display: flex;
   width: 100%;
+  margin: 0 !important;
 }
 
-/* 탭 균등 분배 */
+/* ElementPlus 기본 스타일 완전 통일 */
 .reservation-tabs :deep(.el-tabs__item) {
   flex: 1;
   text-align: center;
+  padding: 0 !important;
+
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  color: #6b7280;
 }
 
-/* 활성 탭 밑줄 설정 (Element Plus 기본값 사용) */
+/* hover — 초록색 */
+.reservation-tabs :deep(.el-tabs__item:hover) {
+  color: #00A950 !important;
+}
+
+/* active — 초록색 + 굵게 */
+.reservation-tabs :deep(.el-tabs__item.is-active) {
+  color: #00A950 !important;
+  font-weight: 600 !important;
+}
+
+/* 초록색 바 */
 .reservation-tabs :deep(.el-tabs__active-bar) {
-  height: 2px !important;
-  bottom: 0 !important;
+  background-color: #00A950 !important;
+  height: 3px !important;
 }
 </style>

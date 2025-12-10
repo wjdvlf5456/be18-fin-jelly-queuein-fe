@@ -1,11 +1,9 @@
 <template>
   <div class="filter-box">
-
     <!-- 날짜 범위 선택 -->
     <DatePicker
       v-model="dateRange"
       selectionMode="range"
-      highlightOnSelect
       showIcon
       iconDisplay="input"
       dateFormat="yy-mm-dd"
@@ -13,7 +11,7 @@
       placeholder="날짜 범위를 선택하세요"
     />
 
-    <!-- 검색창 + 아이콘 -->
+    <!-- 검색창 -->
     <div class="search-container">
       <InputText
         v-model="keyword"
@@ -23,16 +21,13 @@
       />
       <i class="ri-search-line search-icon" @click="emitSearch"></i>
     </div>
-
   </div>
 </template>
 
-
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import DatePicker from 'primevue/datepicker'
 import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
 
 const emit = defineEmits(['search'])
 
@@ -51,6 +46,14 @@ function emitSearch() {
     keyword: keyword.value
   })
 }
+
+watch(dateRange, (val) => {
+  if (val && val.length === 2) {
+    emitSearch()
+  }
+})
+
+
 </script>
 
 <style scoped>
@@ -58,18 +61,14 @@ function emitSearch() {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
-  width: 100%;
+  margin-bottom: 16px;
 }
 
-/* DatePicker width */
-.dater {
-  width: 270px;
+.dater :deep(.p-inputtext) {
+  height: 38px;
   font-size: 14px;
-  padding: 4px 5px;
 }
 
-/* 오른쪽 검색창 컨테이너 */
 .search-container {
   position: relative;
   width: 260px;
@@ -78,18 +77,17 @@ function emitSearch() {
 
 .search-input {
   width: 100%;
-  padding-right: 32px; /* 아이콘 공간 확보 */
+  padding-right: 32px;
+  height: 38px;
 }
 
-/* 검색 아이콘 오른쪽 정렬 */
 .search-icon {
   position: absolute;
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 18px;
-  color: #555;
+  color: #666;
   cursor: pointer;
 }
-
 </style>

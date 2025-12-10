@@ -32,7 +32,6 @@
 </template>
 
 <script setup>
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationTable from '@/components/reservation/ReservableAssetsTable.vue'
 import { ref, onMounted } from 'vue'

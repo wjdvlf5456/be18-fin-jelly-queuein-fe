@@ -151,7 +151,7 @@ import api from "@/api/axios";
       연도 관련 설정
 ================================ */
 const currentYear = new Date().getFullYear();
-const yearList = [2021, 2022, 2023, 2024, 2025, 2026];
+const yearList = ref([]);
 
 const selectedBaseYear = ref(currentYear - 1);
 const selectedCompareYear = ref(currentYear);
@@ -228,13 +228,31 @@ async function loadTargetStatus() {
   }
 }
 
+// 년도 리스트 호출 api
+async function loadYears() {
+  try {
+    const { data } = await api.get("/accounting/usage-history/years");
+
+    // DTO 구조: { years: [...] }
+    yearList.value = data.years;
+
+    // 기본 비교 연도 설정
+    if (yearList.value.length > 0) {
+      selectedBaseYear.value = yearList.value[0]; // 첫 번째 연도
+      selectedCompareYear.value = yearList.value[yearList.value.length - 1]; // 마지막 연도
+    }
+  } catch (err) {
+    console.error("연도 조회 실패:", err);
+  }
+}
+
 /* ================================
       특정 연도 목표 조회
 ================================ */
 async function loadTargetByYear() {
   try {
-    const { data } = await api.get(`/accounting/usage-targets/${viewYear.value}`);
-    viewTargetRate.value = data.targetRate;
+    const { data } = await api.get("/accounting/usage-history/years");
+    yearList.value = data.years;
   } catch (e) {
     console.error("연도별 목표 조회 실패:", e);
     viewTargetRate.value = 0;
@@ -337,9 +355,11 @@ function formatMoney(v) {
 /* ================================
       초기 실행
 ================================ */
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener("keyup", handleKeyPress);
-  loadData();
+
+  await loadYears();       // 먼저 연도 목록 불러옴
+  await loadData();        // 그 다음 KPI 데이터 불러옴
   loadTargetStatus();
 });
 
@@ -394,6 +414,13 @@ onBeforeUnmount(() => {
   border: 1px solid #ddd;
   border-radius: 6px;
 }
+
+.search-box input {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
 
 .content-wrapper {
   display: flex;

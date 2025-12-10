@@ -11,7 +11,7 @@
 
         <!-- 연도 선택 -->
         <select v-model="selectedYear" @change="loadData" class="filter-select">
-          <option v-for="y in yearList" :key="y">{{ y }}</option>
+          <option v-for="y in yearList" :key="y" :value="y">{{ y }}</option>
         </select>
 
         <!-- 분기 선택 -->
@@ -34,7 +34,8 @@
 
       <!-- 오른쪽 : Excel 버튼 -->
       <button class="excel-btn" :disabled="excelLoading" @click="downloadExcel">
-        <span v-if="!excelLoading">Excel로 내보내기</span>
+        <i class="ri-download-line download-icon"></i>
+        <span v-if="!excelLoading"> Excel로 내보내기</span>
         <span v-else class="loading-spinner"></span>
       </button>
     </div>
@@ -80,23 +81,50 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import api from "@/api/axios"
 
-// 🔥 기본 연도 = 올해
-const currentYear = new Date().getFullYear()
-
+// -----------------------------
+// 상태
+// -----------------------------
 const rows = ref([])
-const yearList = [currentYear - 1, currentYear, currentYear + 1]
-const selectedYear = ref(currentYear)
+
+const yearList = ref([])   // 백엔드에서 받아올 연도 리스트
+const selectedYear = ref(null)
+
 const selectedQuarter = ref(null)
 const assetName = ref("")
+
 const excelLoading = ref(false)
 
-// 🔥 데이터 조회 GET 요청
+// -----------------------------
+// 연도 조회 API
+// -----------------------------
+async function loadYears() {
+  try {
+    const { data } = await api.get("/accounting/usage-history/years")
+
+    // ➜ data = { years: [2023, 2024] }
+    yearList.value = data.years
+
+    if (yearList.value.length > 0) {
+      selectedYear.value = yearList.value[yearList.value.length - 1] // 가장 최신 연도 기본 선택
+    }
+
+  } catch (err) {
+    console.error("연도 조회 실패:", err)
+  }
+}
+
+// -----------------------------
+// 분기 정산 데이터 조회
+// -----------------------------
 async function loadData() {
+
+  if (!selectedYear.value) return
+
   const params = {
-    year: Number(selectedYear.value),
+    year: Number(selectedYear.value)
   }
 
   if (selectedQuarter.value !== null) {
@@ -113,7 +141,9 @@ async function loadData() {
   rows.value = res.data.rows
 }
 
-// 🔥 숫자 포맷 함수들
+// -----------------------------
+// 숫자 포맷
+// -----------------------------
 function formatPercent(v) {
   return (v * 100).toFixed(1) + "%"
 }
@@ -126,13 +156,14 @@ function formatHours(h) {
   return h.toLocaleString() + " 시간"
 }
 
-// 🔥 Excel 다운로드 (파일명 자동 생성)
+// -----------------------------
+// Excel 다운로드
+// -----------------------------
 async function downloadExcel() {
   try {
     excelLoading.value = true
 
     const params = new URLSearchParams()
-
     params.append("year", Number(selectedYear.value))
 
     if (selectedQuarter.value !== null) {
@@ -150,22 +181,19 @@ async function downloadExcel() {
 
     const url = `/accounting/settlement/quarter/excel?${params.toString()}`
 
-    console.log("Excel URL:", url)
-
-    // Axios로 blob 다운로드
     const res = await api.get(url, {
-      responseType: "blob",
+      responseType: "blob"
     })
 
-    // 브라우저 다운로드 트리거
-    const blobUrl = window.URL.createObjectURL(new Blob([res.data]))
+    const blobUrl = URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement("a")
     link.href = blobUrl
     link.setAttribute("download", filename)
     document.body.appendChild(link)
     link.click()
     link.remove()
-    window.URL.revokeObjectURL(blobUrl)
+    URL.revokeObjectURL(blobUrl)
+
   } catch (err) {
     console.error("Excel 다운로드 실패:", err)
   } finally {
@@ -173,7 +201,13 @@ async function downloadExcel() {
   }
 }
 
-loadData()
+// -----------------------------
+// 초기 실행
+// -----------------------------
+onMounted(async () => {
+  await loadYears()
+  await loadData()
+})
 </script>
 
 <style scoped>
@@ -185,6 +219,12 @@ loadData()
   font-size: 20px;
   margin-bottom: 20px;
   font-weight: bold;
+}
+
+.download-icon {
+  font-size: 18px;
+  margin-right: 6px;
+  color: white; /* 흐린 초록 배경에서 잘 보이도록 */
 }
 
 /* 필터 전체 */
@@ -233,10 +273,14 @@ loadData()
 /* Excel 버튼 */
 .excel-btn {
   padding: 6px 14px;
-  background: #eef6ff;
-  border: 1px solid #d0e4ff;
+  background: #217346;       /* 초록색 */
+  border: 1px solid #217346;
+  color: white;
   border-radius: 6px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* 버튼 로딩 상태 */

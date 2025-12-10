@@ -1,30 +1,20 @@
 <template>
-  <!-- 탭 -->
-  <div class="tabs-full-row">
-    <ReservationTabs />
-  </div>
   <div>
+
     <!-- 헤더 -->
     <div class="header-row">
       <h2>사용자 예약 내용 조회</h2>
-
-      <!-- <el-input
-        v-model="selectedFilters.assetName"
-        placeholder="검색어를 입력해주세요"
-        class="search-input"
-        @keyup.enter="refreshTable"
-      >
-        <template #append>
-          <el-button :icon="Search" @click="refreshTable" />
-        </template>
-      </el-input> -->
     </div>
 
     <!-- 날짜 필터 -->
     <ReservationFilters @change="handleFilterChange" />
 
     <!-- 예약 목록 -->
-    <ReservationTable :filters="selectedFilters" :key="tableKey" @open-detail="openDetailModal" />
+    <ReservationTable
+      :filters="selectedFilters"
+      :key="tableKey"
+      @open-detail="openDetailModal"
+    />
 
     <!-- 상세 모달 -->
     <ReservationDetailModal
@@ -39,10 +29,11 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, watch } from 'vue'
 
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
+
 import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationTable from '@/components/reservation/UserReservationTable.vue'
 import ReservationDetailModal from '@/components/reservation/ReservationDetailModal.vue'
