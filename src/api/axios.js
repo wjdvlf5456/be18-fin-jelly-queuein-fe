@@ -2,17 +2,21 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api/v1`
+  baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
+  withCredentials: true, // 쿠키 자동 전수
 })
+axios.defaults.withCredentials = true
 
 // 요청 인터셉터 — Authorization 자동 추가
-api.interceptors.request.use(config => {
-
-    if (config.url.includes('/auth/refresh')) {
+api.interceptors.request.use((config) => {
+  if (config.url.includes('/auth/refresh')) {
     return config
   }
   const token = localStorage.getItem('accessToken')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+
   return config
 })
 
@@ -21,17 +25,17 @@ let isRefreshing = false
 let refreshSubscribers = []
 
 function onTokenRefreshed(newToken) {
-  refreshSubscribers.forEach(callback => callback(newToken))
+  refreshSubscribers.forEach((callback) => callback(newToken))
   refreshSubscribers = []
 }
 
-function addRefreshSubscriber(callback) {g
+function addRefreshSubscriber(callback) {
   refreshSubscribers.push(callback)
 }
 
 api.interceptors.response.use(
-  res => res,
-  async error => {
+  (res) => res,
+  async (error) => {
     const originalRequest = error.config
 
     // 403
@@ -47,7 +51,6 @@ api.interceptors.response.use(
     // Access Token 만료
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
-      const refreshToken = localStorage.getItem('refreshToken')
 
       if (originalRequest.url.includes('/auth/logout')) {
         return Promise.reject(error)
@@ -55,8 +58,8 @@ api.interceptors.response.use(
 
       // 이미 갱신 중이라면 대기
       if (isRefreshing) {
-        return new Promise(resolve => {
-          addRefreshSubscriber(token => {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((token) => {
             originalRequest.headers.Authorization = `Bearer ${token}`
             resolve(api(originalRequest))
           })
@@ -66,29 +69,26 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const res = await api.post('/auth/refresh', { refreshToken })
+        const res = await api.post('/auth/refresh')
 
         const newAccess = res.data.accessToken
-        const newRefresh = res.data.refreshToken
 
         localStorage.setItem('accessToken', newAccess)
-        localStorage.setItem('refreshToken', newRefresh)
 
         isRefreshing = false
         onTokenRefreshed(newAccess)
 
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
         return api(originalRequest)
-
       } catch (err) {
         isRefreshing = false
-        // localStorage.clear()
-        //window.location.href = '/'
+        localStorage.clear()
+        window.location.href = '/'
         return Promise.reject(err)
       }
     }
 
-        if (error.response?.data) {
+    if (error.response?.data) {
       const data = error.response.data
       // data.code 또는 data.message 활용
       if (data.message) {
@@ -113,8 +113,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  }
-
+  },
 )
 
 export default api

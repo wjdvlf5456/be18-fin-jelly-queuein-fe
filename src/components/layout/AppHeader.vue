@@ -1,6 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
+import { authApi } from '@/api/authApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,7 +18,7 @@ const name = (localStorage.getItem('userName') || '').trim()
 // 🧑 이름 우선 표시 + 역할 보조 처리
 // ===============================
 const roleText = computed(() => {
-  if (name) return name  // DB 이름이 있으면 가장 우선!
+  if (name) return name // DB 이름이 있으면 가장 우선!
   return (
     {
       MASTER: '마스터',
@@ -42,10 +43,11 @@ function goMyPage() {
 // ===============================
 // 🔐 로그아웃
 // ===============================
-function logout() {
+async function logout() {
+  await authApi.logout()
   localStorage.removeItem('accessToken')
   localStorage.removeItem('role')
-  localStorage.removeItem('name')
+  localStorage.removeItem('userName')
   router.push('/')
 }
 
@@ -59,16 +61,15 @@ const breadcrumbMap = {
   edit: '자원 수정',
   'usage-history': '자원 사용 기록 조회',
   'usage-trend': '사용 추이',
-  'performance': '운영 성과 분석',
-  'quarter': '분기 정산',
-  'reservations' : '예약',
+  performance: '운영 성과 분석',
+  quarter: '분기 정산',
+  reservations: '예약',
   'available-assets': '가능 자원',
-  'me': '사용자 예약',
-  'applied': '신청 예약',
-  'monthly': '스케쥴 확인',
-  'apply': '신청하기',
+  me: '사용자 예약',
+  applied: '신청 예약',
+  monthly: '스케쥴 확인',
+  apply: '신청하기',
   'create-reservation': '예약하기',
-
 
   // 기타
   categories: '카테고리 관리',
@@ -94,10 +95,10 @@ function getBreadcrumbHtml() {
 
   if (segments.length === 0) return ''
 
-  const mapped = segments.map(seg => breadcrumbMap[seg] || seg)
+  const mapped = segments.map((seg) => breadcrumbMap[seg] || seg)
 
   return mapped
-    .map(seg => `<span class="breadcrumb-item">${seg}</span>`)
+    .map((seg) => `<span class="breadcrumb-item">${seg}</span>`)
     .join(`<span class="breadcrumb-divider"> / </span>`)
 }
 </script>
@@ -115,7 +116,6 @@ function getBreadcrumbHtml() {
     </div>
 
     <div class="right">
-
       <div class="search-box">
         <i class="ri-search-line"></i>
         <input type="text" placeholder="검색" />
@@ -123,7 +123,7 @@ function getBreadcrumbHtml() {
 
       <i class="ri-notification-3-line icon"></i>
 
-      <div class="profile" @click="goMyPage" style="cursor: pointer;">
+      <div class="profile" @click="goMyPage" style="cursor: pointer">
         <div class="avatar">{{ avatarText }}</div>
         <span>{{ roleText }}</span>
       </div>
@@ -133,7 +133,6 @@ function getBreadcrumbHtml() {
       <button class="logout" @click="logout">
         <i class="ri-logout-box-line"></i>
       </button>
-
     </div>
   </header>
 </template>
