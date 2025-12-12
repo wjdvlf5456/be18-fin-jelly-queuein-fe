@@ -205,7 +205,8 @@ const onAction = () => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -214,10 +215,11 @@ const onAction = () => {
 
 .modal {
   width: 800px;
+  max-width: 90vw;
   background: #fff;
-  border-radius: 6px;
-  padding: 30px 40px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 12px;
+  padding: 32px 40px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .header {

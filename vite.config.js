@@ -7,23 +7,22 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [
-      vue(),
-      vueDevTools(),
-    ],
+    plugins: [vue(), vueDevTools()],
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    // Vite asset handling 설정
+    assetsInclude: ['**/*.svg'],
     server: {
       proxy: {
         '/api': {
           target: env.VITE_API_URL,
           changeOrigin: true,
-          secure: false
-        }
-      }
-    }
+          secure: false,
+        },
+      },
+    },
   }
 })

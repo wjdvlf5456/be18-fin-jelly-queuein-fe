@@ -7,6 +7,11 @@ export function diffChanges(original, current, roles) {
     const before = original.find(o => o.permissionId === perm.permissionId)
 
     for (const role of roles) {
+      // MASTER 역할은 변경사항에 포함하지 않음
+      if (role.roleName === 'MASTER') {
+        continue
+      }
+      
       const roleId = role.roleId
 
       const beforeVal = before.roles[roleId]

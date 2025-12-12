@@ -79,6 +79,11 @@ const router = createRouter({
           meta: { title: '예약 신청', minRole: 'GENERAL' },
           // meta: { requiresAuth: true }
         },
+        {
+          path: 'guide',
+          component: () => import('@/views/app/GuideView.vue'),
+          meta: { title: '사용법 가이드' },
+        },
       ],
     },
 
@@ -88,14 +93,16 @@ const router = createRouter({
     {
       path: '/admin',
       component: AdminLayout,
-      meta: { requiresAuth: true, role: 'ADMIN' },
+      meta: { requiresAuth: true },
       children: [
-        { path: '', component: AdminDashboard },
-
         // -------------------------
-        // 기본 이동: /admin → /admin/users
+        // 기본 대시보드: /admin → AdminDashboard
         // -------------------------
-        { path: '', redirect: '/admin/users' },
+        {
+          path: '',
+          component: AdminDashboard,
+          meta: { title: '관리자 대시보드', requiresAuth: true },
+        },
 
         // -------------------------
         // 사용자 관리
@@ -104,6 +111,13 @@ const router = createRouter({
           path: 'users',
           component: () => import('@/views/admin/iam/user/UserManagement.vue'),
           meta: { title: '사용자 관리', minRole: 'ADMIN' },
+        },
+        // 사용자 상세 조회
+        {
+          path: 'users/:userId',
+          name: 'UserDetail',
+          component: () => import('@/views/admin/iam/user/UserDetailView.vue'),
+          meta: { title: '사용자 상세 조회', minRole: 'ADMIN' },
         },
         // 관리자용 사용자 수정
         {
@@ -134,7 +148,7 @@ const router = createRouter({
             {
               path: 'list',
               component: () => import('@/views/admin/iam/permission/PermissionList.vue'),
-              meta: { title: '권한 목록', minRole: 'ADMIN' },
+              meta: { title: '권한 관리', minRole: 'ADMIN' },
             },
 
             {
@@ -147,12 +161,6 @@ const router = createRouter({
               path: ':permissionId/edit',
               component: () => import('@/views/admin/iam/permission/PermissionEdit.vue'),
               meta: { title: '권한 수정', minRole: 'MASTER' },
-            },
-
-            {
-              path: 'matrix',
-              component: () => import('@/views/admin/iam/permission/PermissionMatrix.vue'),
-              meta: { title: '역할-권한 매핑', minRole: 'ADMIN' },
             },
           ],
         },
@@ -188,16 +196,7 @@ const router = createRouter({
           ],
         },
 
-        // ========== 카테고리 관리 ==========
-
-        // 자원 수정
-        {
-          path: 'assets/:assetId/edit',
-          component: () => import('@/views/admin/asset/AssetEditView.vue'),
-          meta: { minRole: 'MANAGER' },
-        },
-
-        // 자원 상세 조회
+        // 자원 상세 조회 (assets children 밖에 별도로 정의)
         {
           path: 'assets/:assetId',
           component: () => import('@/views/admin/asset/AssetDetailView.vue'),
@@ -238,6 +237,11 @@ const router = createRouter({
           component: () => import('@/views/admin/reservation/AppliedReservations.vue'),
           meta: { title: '신청 예약 관리', requiresAuth: true, minRole: 'MANAGER' },
           // meta: { requiresAuth: true }
+        },
+        {
+          path: 'guide',
+          component: () => import('@/views/admin/GuideView.vue'),
+          meta: { title: '관리자 가이드', minRole: 'ADMIN' },
         },
       ],
     },
