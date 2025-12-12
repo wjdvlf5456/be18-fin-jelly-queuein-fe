@@ -19,6 +19,12 @@ import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import ToastService from 'primevue/toastservice'
+import Accordion from 'primevue/accordion'
+import AccordionTab from 'primevue/accordiontab'
+import Card from 'primevue/card'
+import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 
 
@@ -50,5 +56,11 @@ app.component('Button', Button)
 app.component('Toast', Toast)
 app.use(ToastService)
 
-app.component('Chart', Chart);
+app.component('Chart', Chart)
+app.component('Accordion', Accordion)
+app.component('AccordionTab', AccordionTab)
+app.component('Card', Card)
+app.component('Tag', Tag)
+app.component('DataTable', DataTable)
+app.component('Column', Column)
 app.mount('#app');

@@ -1,9 +1,13 @@
 <script setup>
-import {ref, onMounted, nextTick, watch} from 'vue'
-import {useRouter} from 'vue-router'
-import {useAuthStore} from '@/stores/authStore'
+import { ref, onMounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
 import Modal from '@/components/common/Modal.vue'
-import Logo from '@/assets/icons/logo.svg'
+
+// Vue 3 + Vite 표준: import를 사용하여 asset 경로 처리
+// Vite는 이미지를 자동으로 URL로 변환합니다
+import logoUrl from '@/assets/icons/logo.svg'
+import heroImageUrl from '@/assets/img/qiinMain.png'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -12,58 +16,56 @@ const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 const isLoading = ref(false)
-const errorMessage = ref("");
-const showError = ref(false);
+const errorMessage = ref('')
+const showError = ref(false)
 
-watch(rememberMe, v => console.log("rememberMe changed →", v))
+watch(rememberMe, (v) => console.log('rememberMe changed →', v))
 
-console.log("ON LOGIN VIEW RENDER", {
-  rememberEmail: localStorage.getItem("rememberEmail"),
-  fullStorageDump: JSON.parse(JSON.stringify(localStorage))
+console.log('ON LOGIN VIEW RENDER', {
+  rememberEmail: localStorage.getItem('rememberEmail'),
+  fullStorageDump: JSON.parse(JSON.stringify(localStorage)),
 })
 
 // 화면 로드 시 저장된 이메일 불러오기
 onMounted(async () => {
-
-  console.log("MOUNT — stored rememberEmail:", localStorage.getItem("rememberEmail"))
-  console.log("MOUNT — saved variable before apply:", email.value)
+  console.log('MOUNT — stored rememberEmail:', localStorage.getItem('rememberEmail'))
+  console.log('MOUNT — saved variable before apply:', email.value)
 
   await nextTick()
 
   const saved = localStorage.getItem('rememberEmail')
-  console.log("MOUNT — saved from LS:", saved)
+  console.log('MOUNT — saved from LS:', saved)
 
   if (saved) {
     setTimeout(() => {
       email.value = saved
       rememberMe.value = true
-    }, 50)   // Autofill보다 항상 늦게 실행됨
+    }, 50) // Autofill보다 항상 늦게 실행됨
   }
 
-  console.log("LOGIN VIEW MOUNTED!!")
+  console.log('LOGIN VIEW MOUNTED!!')
 })
 
 function validate() {
   if (!email.value) {
-    errorMessage.value = "이메일을 입력해주세요.";
-    showError.value = true;
-    return false;
+    errorMessage.value = '이메일을 입력해주세요.'
+    showError.value = true
+    return false
   }
 
   if (!password.value) {
-    errorMessage.value = "비밀번호를 입력해주세요.";
-    showError.value = true;
-    return false;
+    errorMessage.value = '비밀번호를 입력해주세요.'
+    showError.value = true
+    return false
   }
 
-  showError.value = false;
-  return true;
+  showError.value = false
+  return true
 }
 
 async function login() {
-
   if (!validate()) {
-    return;
+    return
   }
 
   if (isLoading.value) {
@@ -86,21 +88,21 @@ async function login() {
     } else {
       router.push('/app')
     }
-
   } catch (e) {
-    console.error(e)
-    errorMessage.value =
-      e.response?.data?.message || "로그인에 실패했습니다."
+    console.error('로그인 실패:', e)
+    // 로그인 실패 시 구체적인 안내 메시지 표시
+    if (e.response?.status === 401 || e.response?.status === 400) {
+      errorMessage.value =
+        '아이디(로그인 전화번호, 로그인 전용 아이디) 또는 비밀번호가 잘못 되었습니다.\n아이디와 비밀번호를 정확히 입력해 주세요.'
+    } else {
+      errorMessage.value = e.response?.data?.message || '로그인에 실패했습니다.'
+    }
     showError.value = true
-  } finally {
-    setTimeout(() => {
-      isLoading.value = false
-    }, 500)
+    // 에러 발생 시 즉시 로딩 상태 해제
+    isLoading.value = false
   }
 }
-
 </script>
-
 
 <template>
   <div class="login-layout">
@@ -108,7 +110,7 @@ async function login() {
     <div class="left">
       <div class="center-wrapper">
         <div class="title">
-          <img :src="Logo" alt="QueueIn Logo" class="logo-img"/>
+          <img :src="logoUrl" alt="QueueIn Logo" class="logo-img" />
         </div>
         <div class="subtitle">사내 일정 관리 시스템</div>
 
@@ -132,17 +134,11 @@ async function login() {
           />
 
           <div class="options">
-            <label>
-              <input type="checkbox" v-model="rememberMe"/> 사용자 기억하기
-            </label>
+            <label> <input type="checkbox" v-model="rememberMe" /> 사용자 기억하기 </label>
             <a href="#" class="find-pw">비밀번호 찾기</a>
           </div>
 
-          <button
-            type="submit"
-            class="login-btn"
-            :disabled="isLoading"
-          >
+          <button type="submit" class="login-btn" :disabled="isLoading">
             {{ isLoading ? '로그인 중 입니다...' : '로그인' }}
           </button>
         </form>
@@ -157,7 +153,7 @@ async function login() {
 
     <!-- Right Section -->
     <div class="right">
-      <img src="../../assets/img/qiinMain.png" class="hero-img" alt="calendar"/>
+      <img :src="heroImageUrl" class="hero-img" alt="calendar" />
     </div>
 
     <!-- Brand -->
@@ -178,22 +174,25 @@ async function login() {
   display: flex;
   background: white;
   position: relative;
+  box-sizing: border-box;
 }
 
 /* Left */
 .left {
-  flex: 1;
+  flex: 7 1 0%;
+  flex-basis: 70%;
   padding: 40px 400px;
   display: flex;
   flex-direction: column;
   justify-content: center; /* 세로 가운데 정렬 유지 */
   align-items: center; /* 가로 가운데 정렬 유지 */
+  box-sizing: border-box;
 }
 
 .center-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;      /* 자식 모두 가로 중앙 */
+  align-items: center; /* 자식 모두 가로 중앙 */
   width: 100%;
 }
 
@@ -209,13 +208,11 @@ async function login() {
   object-fit: contain;
 }
 
-
 .subtitle {
   font-size: 16px;
   margin-bottom: 50px;
   color: #6b6b6b;
 }
-
 
 .login-form {
   width: 100%;
@@ -225,7 +222,6 @@ async function login() {
   flex-direction: column;
   gap: 14px;
 }
-
 
 .input {
   border: 1px solid #ccc;
@@ -270,11 +266,13 @@ async function login() {
 
 /* Right */
 .right {
-  flex: 1;
-  background: #C8E0C3; /* 공용 색상 */
+  flex: 3 1 0%;
+  flex-basis: 30%;
+  background: #c8e0c3; /* 공용 색상 */
   display: flex;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .hero-img {
@@ -311,12 +309,14 @@ async function login() {
   width: 100%;
   max-width: 500px;
   padding: 10px 14px;
-  background: #ffe5e5;
-  color: #b30000;
-  border: 1px solid #ffb3b3;
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef5350;
   border-radius: 4px;
   font-size: 13px;
   margin-bottom: 10px;
+  text-align: left;
+  white-space: pre-line;
 }
 
 @keyframes spin {

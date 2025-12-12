@@ -1,12 +1,18 @@
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { hasRole } from '@/utils/role'
 
 const visible = ref(true)
 const router = useRouter()
 
 const goHome = () => {
-  router.push('/admin')
+  // 역할에 따라 적절한 페이지로 리다이렉트
+  if (hasRole('ADMIN')) {
+    router.push('/admin')
+  } else {
+    router.push('/app')
+  }
 }
 </script>
 

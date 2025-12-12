@@ -1,9 +1,6 @@
 <template>
   <div class="page-container">
 
-    <!-- 탭 메뉴 -->
-    <AccountingTabMenu />
-
     <h2 class="page-title">자원 사용 기록</h2>
 
     <!-- 검색 필터 -->

@@ -1,8 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { userApi } from '@/api/iam/userApi.js'
-import UserCreateDialog from "@/components/iam/UserCreateDialog.vue"
+import UserCreateDialog from '@/components/iam/UserCreateDialog.vue'
 
 import IamTabs from '@/components/iam/IamTabs.vue'
 
@@ -13,9 +13,9 @@ import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
-import ToggleSwitch from 'primevue/toggleswitch'
 
 const router = useRouter()
+const route = useRoute()
 
 // --------------------------------------------------
 // 상태
@@ -29,7 +29,7 @@ const showCreate = ref(false)
 const search = ref({
   keyword: '',
   role: null,
-  status: null
+  status: null,
 })
 
 const roleOptions = [
@@ -37,13 +37,13 @@ const roleOptions = [
   { label: 'Master', value: 'MASTER' },
   { label: 'Admin', value: 'ADMIN' },
   { label: 'Manager', value: 'MANAGER' },
-  { label: 'General', value: 'GENERAL' }
+  { label: 'General', value: 'GENERAL' },
 ]
 
 const statusOptions = [
   { label: '전체', value: null },
   { label: 'Active', value: true },
-  { label: 'Inactive', value: false }
+  { label: 'Inactive', value: false },
 ]
 
 // --------------------------------------------------
@@ -56,7 +56,7 @@ async function loadUsers() {
     const params = {
       keyword: search.value.keyword || null,
       roleName: search.value.role,
-      active: search.value.status
+      active: search.value.status,
     }
 
     const res = await userApi.searchUsers(params)
@@ -64,57 +64,113 @@ async function loadUsers() {
     users.value = res.data.content
     total.value = res.data.totalElements
   } catch (e) {
-    console.error("[UserManagement] 사용자 조회 실패:", e)
-    alert("사용자 목록 조회 중 오류가 발생했습니다.")
+    console.error('[UserManagement] 사용자 조회 실패:', e)
+    alert('사용자 목록 조회 중 오류가 발생했습니다.')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(loadUsers)
+// 마운트 시 데이터 로드
+onMounted(() => {
+  // 이전 경로 확인 (permission에서 온 경우 재로드)
+  const prevPath = sessionStorage.getItem('previousRoutePath')
+  if (prevPath && prevPath !== '/admin/users' && prevPath.startsWith('/admin/permissions')) {
+    // permission에서 온 경우 Transition 완료 후 로드
+    setTimeout(() => {
+      loadUsers()
+    }, 350)
+  } else {
+    // 일반적인 경우 즉시 로드
+    loadUsers()
+  }
+})
+
+// 라우트 변경 감지 - Transition 완료 후 데이터 로드
+watch(
+  () => route.path,
+  async (newPath, oldPath) => {
+    // 사용자 페이지로 이동할 때 (다른 페이지에서 온 경우)
+    if (newPath === '/admin/users' && oldPath && oldPath !== '/admin/users') {
+      console.log('[UserManagement] 경로 변경 감지:', { from: oldPath, to: newPath })
+      // Transition 완료를 기다림 (300ms + 약간의 여유)
+      await new Promise((resolve) => setTimeout(resolve, 350))
+      await nextTick()
+      loadUsers()
+    }
+  },
+  { immediate: false },
+)
 
 // --------------------------------------------------
 // 사용자 삭제
 // --------------------------------------------------
 async function confirmDelete(userId) {
-  if (!confirm("정말 삭제하시겠습니까?")) return
+  if (!confirm('정말 삭제하시겠습니까?')) return
 
   try {
     await userApi.deleteUser(userId)
-    await loadUsers()   // 삭제 후 목록 재조회
+    await loadUsers() // 삭제 후 목록 재조회
   } catch (e) {
-    console.error("[UserManagement] 사용자 삭제 실패:", e)
-    alert("사용자 삭제 중 오류가 발생했습니다.")
+    console.error('[UserManagement] 사용자 삭제 실패:', e)
+    alert('사용자 삭제 중 오류가 발생했습니다.')
   }
+}
+
+// --------------------------------------------------
+// 행 클릭 이벤트
+// --------------------------------------------------
+function onRowClick(event) {
+  // 편집 버튼이나 삭제 버튼 클릭 시에는 행 클릭 이벤트 무시
+  const target = event.originalEvent.target
+  if (
+    target.closest('button') ||
+    target.closest('.p-button') ||
+    target.closest('a')
+  ) {
+    return
+  }
+  
+  const user = event.data
+  if (user) {
+    viewUserDetail(user)
+  }
+}
+
+// --------------------------------------------------
+// 상세 조회 기능
+// --------------------------------------------------
+function viewUserDetail(user) {
+  router.push(`/admin/users/${user.userId}`)
 }
 
 // --------------------------------------------------
 // 수정 기능
 // --------------------------------------------------
 function editUser(user) {
-  if (user.roleName === "MASTER") return;
+  if (user.roleName === 'MASTER') return
   router.push(`/admin/users/${user.userId}/edit`)
 }
 
 // --------------------------------------------------
 // 아바타 표시용 첫 글자
 // --------------------------------------------------
-function firstLetter(name = "") {
-  return name?.trim()?.charAt(0) || "?"
+function firstLetter(name = '') {
+  return name?.trim()?.charAt(0) || '?'
 }
 
 function formatDate(value) {
-  if (!value) return "-"
+  if (!value) return '-'
 
   const date = new Date(value) // ISO → Date 변환
 
   // YYYY-MM-DD HH:mm:ss 형식 만들기
   const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  const hh = String(date.getHours()).padStart(2, "0")
-  const mm = String(date.getMinutes()).padStart(2, "0")
-  const ss = String(date.getSeconds()).padStart(2, "0")
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  const ss = String(date.getSeconds()).padStart(2, '0')
 
   return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
 }
@@ -126,13 +182,12 @@ const roleTagStyle = {
   MASTER: { severity: 'danger' },
   ADMIN: { severity: 'warning' },
   MANAGER: { severity: 'info' },
-  GENERAL: { severity: 'success' }
+  GENERAL: { severity: 'success' },
 }
 </script>
 
 <template>
   <div class="page">
-
     <IamTabs />
 
     <!-- Title -->
@@ -142,21 +197,12 @@ const roleTagStyle = {
         <p class="desc">사용자, 역할, 권한을 관리할 수 있는 페이지입니다.</p>
       </div>
 
-      <Button
-        label="사용자 등록"
-        icon="pi pi-plus"
-        class="add-btn"
-        @click="showCreate = true"
-      />
+      <Button label="사용자 등록" icon="pi pi-plus" class="add-btn" @click="showCreate = true" />
     </header>
 
     <!-- Filters -->
     <section class="filters">
-      <InputText
-        v-model="search.keyword"
-        placeholder="사용자 검색하기"
-        class="input"
-      />
+      <InputText v-model="search.keyword" placeholder="사용자 검색하기" class="input" />
 
       <Dropdown
         v-model="search.role"
@@ -188,6 +234,7 @@ const roleTagStyle = {
       :rows="10"
       :totalRecords="total"
       class="datatable"
+      @row-click="onRowClick"
     >
       <!-- 프로필 -->
       <Column header="프로필">
@@ -203,24 +250,21 @@ const roleTagStyle = {
       <!-- 역할 -->
       <Column field="roleName" header="역할" sortable>
         <template #body="{ data }">
-          <Tag
-            :value="data.roleName"
-            :severity="roleTagStyle[data.roleName]?.severity"
-          />
+          <Tag :value="data.roleName" :severity="roleTagStyle[data.roleName]?.severity" />
         </template>
       </Column>
 
       <!-- Status -->
-<!--      <Column field="active" header="Status">-->
-<!--        <template #body="{ data }">-->
-<!--          <div class="status-col">-->
-<!--            <ToggleSwitch v-model="data.active" />-->
-<!--            <span :class="['status-text', data.active ? 'active' : 'inactive']">-->
-<!--              {{ data.active ? 'Active' : 'Inactive' }}-->
-<!--            </span>-->
-<!--          </div>-->
-<!--        </template>-->
-<!--      </Column>-->
+      <!--      <Column field="active" header="Status">-->
+      <!--        <template #body="{ data }">-->
+      <!--          <div class="status-col">-->
+      <!--            <ToggleSwitch v-model="data.active" />-->
+      <!--            <span :class="['status-text', data.active ? 'active' : 'inactive']">-->
+      <!--              {{ data.active ? 'Active' : 'Inactive' }}-->
+      <!--            </span>-->
+      <!--          </div>-->
+      <!--        </template>-->
+      <!--      </Column>-->
 
       <Column field="lastLoginAt" header="마지막 접속" sortable>
         <template #body="{ data }">
@@ -235,7 +279,7 @@ const roleTagStyle = {
             text
             rounded
             :disabled="data.roleName === 'MASTER'"
-            @click="editUser(data)"
+            @click.stop="editUser(data)"
           />
           <Button
             icon="pi pi-trash"
@@ -243,18 +287,13 @@ const roleTagStyle = {
             rounded
             :disabled="data.roleName === 'MASTER'"
             severity="danger"
-            @click="confirmDelete(data.userId)"
+            @click.stop="confirmDelete(data.userId)"
           />
         </template>
       </Column>
-
     </DataTable>
 
-    <UserCreateDialog
-      :visible="showCreate"
-      @close="showCreate = false"
-      @created="loadUsers"
-    />
+    <UserCreateDialog :visible="showCreate" @close="showCreate = false" @created="loadUsers" />
   </div>
 </template>
 
@@ -317,5 +356,15 @@ const roleTagStyle = {
 
 .status-text.inactive {
   color: #999;
+}
+
+/* 행 클릭 가능 스타일 */
+.datatable :deep(.p-datatable-tbody > tr) {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.datatable :deep(.p-datatable-tbody > tr:hover) {
+  background-color: #f5f5f5;
 }
 </style>

@@ -1,6 +1,14 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { hasRole } from '@/utils/role'
+
+// Vue 3 + Vite 표준: asset import
+import reserveIcon from '@/assets/icons/reserve.svg'
+import scheduleIcon from '@/assets/icons/schedule.svg'
+import resourceIcon from '@/assets/icons/resource.svg'
+import statsIcon from '@/assets/icons/stats.svg'
+import userIcon from '@/assets/icons/user.svg'
 
 const props = defineProps({
   open: Boolean,
@@ -8,10 +16,11 @@ const props = defineProps({
 
 const route = useRoute()
 
-const role = localStorage.getItem('role')
-const isAdmin = computed(() =>
-  ['MASTER', 'ADMIN', 'MANAGER'].includes(role)
-)
+// MANAGER 이상 (자원 관리, 정산 관리용)
+const isAdminOrManager = computed(() => hasRole('MANAGER'))
+
+// ADMIN 이상 (유저 관리, 가이드용)
+const isAdminOnly = computed(() => hasRole('ADMIN'))
 
 function isActiveExact(path) {
   return route.path === path
@@ -36,7 +45,7 @@ function isActiveStartsWith(basePath) {
         :class="{ active: isActiveStartsWith('/app/reservations/me') }"
         @click="$emit('close-sidebar')"
       >
-        <img src="@/assets/icons/reserve.svg" class="icon" />
+        <img :src="reserveIcon" class="icon" />
         <span v-if="props.open">예약 관리</span>
       </router-link>
 
@@ -47,44 +56,56 @@ function isActiveStartsWith(basePath) {
         :class="{ active: isActiveStartsWith('/app/reservations/monthly') }"
         @click="$emit('close-sidebar')"
       >
-        <img src="@/assets/icons/schedule.svg" class="icon" />
+        <img :src="scheduleIcon" class="icon" />
         <span v-if="props.open">일정 관리</span>
       </router-link>
 
       <!-- 자원 관리 -->
       <router-link
-        v-if="isAdmin"
+        v-if="isAdminOrManager"
         to="/admin/assets"
         class="item"
         :class="{ active: isActiveStartsWith('/admin/assets') }"
         @click="$emit('close-sidebar')"
       >
-        <img src="@/assets/icons/resource.svg" class="icon" />
+        <img :src="resourceIcon" class="icon" />
         <span v-if="props.open">자원 관리</span>
       </router-link>
 
       <!-- 정산 관리 -->
       <router-link
-        v-if="isAdmin"
+        v-if="isAdminOrManager"
         to="/admin/accounting/usage-history"
         class="item"
         :class="{ active: isActiveStartsWith('/admin/accounting') }"
         @click="$emit('close-sidebar')"
       >
-        <img src="@/assets/icons/stats.svg" class="icon" />
+        <img :src="statsIcon" class="icon" />
         <span v-if="props.open">정산 관리</span>
       </router-link>
 
-      <!-- 유저 관리 -->
+      <!-- 유저 관리 (ADMIN 이상만) - 사용자, 역할, 권한 모두 포함 -->
       <router-link
-        v-if="isAdmin"
+        v-if="isAdminOnly"
         to="/admin/users"
         class="item"
-        :class="{ active: isActiveStartsWith('/admin/users') }"
+        :class="{ active: isActiveStartsWith('/admin/users') || isActiveStartsWith('/admin/roles') || isActiveStartsWith('/admin/permissions') }"
         @click="$emit('close-sidebar')"
       >
-        <img src="@/assets/icons/user.svg" class="icon" />
+        <img :src="userIcon" class="icon" />
         <span v-if="props.open">유저 관리</span>
+      </router-link>
+
+      <!-- 사용법 가이드 (ADMIN 이상만) -->
+      <router-link
+        v-if="isAdminOnly"
+        to="/admin/guide"
+        class="item"
+        :class="{ active: isActiveStartsWith('/admin/guide') }"
+        @click="$emit('close-sidebar')"
+      >
+        <i class="pi pi-book icon-text"></i>
+        <span v-if="props.open">사용법 가이드</span>
       </router-link>
 
     </nav>
@@ -109,11 +130,15 @@ function isActiveStartsWith(basePath) {
   padding-top: 70px;
   transition: width 0.25s ease;
   z-index: 30;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 열림 */
 .sidebar.open {
   width: 150px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* 메뉴 전체 정렬 */
@@ -121,6 +146,9 @@ function isActiveStartsWith(basePath) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 20px;
 }
 
 /* 아이템 기본 스타일 */
@@ -146,6 +174,17 @@ function isActiveStartsWith(basePath) {
 .icon {
   width: 40px;
   height: 40px;
+}
+
+/* PrimeIcons 텍스트 아이콘 (가이드용) */
+.icon-text {
+  font-size: 32px;
+  color: #333;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 텍스트 */

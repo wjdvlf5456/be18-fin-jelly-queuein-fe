@@ -52,7 +52,8 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
-      if (originalRequest.url.includes('/auth/logout')) {
+      // 로그인/로그아웃 API는 토큰 리프레시하지 않음
+      if (originalRequest.url.includes('/auth/logout') || originalRequest.url.includes('/auth/login')) {
         return Promise.reject(error)
       }
 

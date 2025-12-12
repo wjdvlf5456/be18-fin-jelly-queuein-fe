@@ -38,6 +38,7 @@ function close() {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -46,10 +47,11 @@ function close() {
 
 .modal-box {
   width: 360px;
+  max-width: 90vw;
   background: white;
-  padding: 24px;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 32px 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .modal-title {
@@ -71,24 +73,35 @@ function close() {
 }
 
 .cancel-btn {
-  padding: 8px 14px;
-  background: #eee;
-  border-radius: 6px;
-  border: none;
+  padding: 10px 20px;
+  background: #f3f4f6;
+  color: #4b5563;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
   outline: none;
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
 }
 
 .confirm-btn {
-  padding: 8px 14px;
-  background: #c7dbcc;
-  border-radius: 6px;
+  padding: 10px 20px;
+  background: #7ba678;
+  color: white;
+  border-radius: 8px;
   border: none;
   outline: none;
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .confirm-btn:hover {
-  opacity: 0.85;
+  background: #6a9568;
+  opacity: 0.9;
 }
 </style>
