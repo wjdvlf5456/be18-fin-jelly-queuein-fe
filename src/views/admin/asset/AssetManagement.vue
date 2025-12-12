@@ -22,72 +22,87 @@
     </div>
 
     <!-- 테이블 -->
-    <el-table
-      :data="assets"
-      stripe
-      border
-      style="width: 100%"
-      :empty-text="'데이터가 없습니다.'"
+    <DataTable
+      :value="assets"
+      stripedRows
+      showGridlines
+      class="asset-table"
+      :emptyMessage="'데이터가 없습니다.'"
       @row-click="goAssetDetail"
+      :sortField="sortField"
+      :sortOrder="sortOrder"
+      @sort="onSort"
+      :pt="{
+        root: { class: 'custom-datatable' },
+        header: { class: 'custom-header' },
+        thead: { class: 'custom-thead' },
+        tbody: { class: 'custom-tbody' },
+        column: { class: 'custom-column' },
+      }"
     >
+      <!-- 자원명 -->
+      <Column field="name" header="자원명" sortable class="name-column" />
+
       <!-- 자원유형 -->
-      <el-table-column label="자원유형">
-        <template #default="scope">
-          {{ typeMap[scope.row.type] || scope.row.type }}
+      <Column field="type" header="자원유형" sortable class="auto-width-column">
+        <template #body="{ data }">
+          {{ typeMap[data.type] || data.type }}
         </template>
-      </el-table-column>
+      </Column>
 
       <!-- 자원상태 -->
-      <el-table-column label="자원상태">
-        <template #default="scope">
-          {{ statusMap[scope.row.status] || scope.row.status }}
+      <Column field="status" header="자원상태" sortable class="auto-width-column">
+        <template #body="{ data }">
+          <Tag
+            :value="statusMap[data.status] || data.status"
+            :severity="getStatusSeverity(data.status)"
+          />
         </template>
-      </el-table-column>
-
-      <!-- 자원명 -->
-      <el-table-column prop="name" label="자원명" />
+      </Column>
 
       <!-- 카테고리 -->
-      <el-table-column prop="categoryName" label="카테고리" />
+      <Column field="categoryName" header="카테고리" sortable class="auto-width-column" />
 
       <!-- 승인 유무 -->
-      <el-table-column label="승인 유무">
-        <template #default="scope">
-          <el-tag :type="scope.row.needApproval ? 'warning' : 'success'" size="small">
-            {{ scope.row.needApproval ? '승인 필요' : '승인 생략' }}
-          </el-tag>
+      <Column field="needApproval" header="승인 유무" sortable class="auto-width-column">
+        <template #body="{ data }">
+          <Tag
+            :value="data.needApproval ? '승인 필요' : '승인 생략'"
+            :severity="data.needApproval ? 'warning' : 'success'"
+          />
         </template>
-      </el-table-column>
+      </Column>
 
       <!-- 예약 가능 -->
-      <el-table-column label="예약 가능">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === 'AVAILABLE' ? 'success' : 'danger'" size="small">
-            {{ scope.row.status === 'AVAILABLE' ? '가능' : '불가' }}
-          </el-tag>
+      <Column field="status" header="예약 가능" sortable class="auto-width-column">
+        <template #body="{ data }">
+          <Tag
+            :value="data.status === 'AVAILABLE' ? '가능' : '불가'"
+            :severity="data.status === 'AVAILABLE' ? 'success' : 'danger'"
+          />
         </template>
-      </el-table-column>
+      </Column>
 
       <!-- 버전 -->
-      <el-table-column prop="version" label="버전" />
-
-      <!-- 편집 버튼 -->
-      <el-table-column label="편집">
-        <template #default="scope">
-          <div class="actions">
-            <el-button type="primary" text size="small" @click.stop="editAsset(scope.row)"
-              >수정</el-button
-            >
-            <el-button type="success" text size="small" @click.stop="openMoveModal(scope.row)"
-              >이동</el-button
-            >
-            <el-button type="danger" text size="small" @click.stop="deleteAsset(scope.row)"
-              >삭제</el-button
-            >
-          </div>
+      <Column field="version" header="버전" sortable class="auto-width-column">
+        <template #body="{ data }">
+          {{ data.version || '-' }}
         </template>
-      </el-table-column>
-    </el-table>
+      </Column>
+
+      <!-- 편집 메뉴 -->
+      <Column header="" :exportable="false" class="action-column">
+        <template #body="{ data }">
+          <Button
+            icon="pi pi-ellipsis-v"
+            text
+            rounded
+            @click.stop="(e) => openMenu(e, data)"
+            class="menu-button"
+          />
+        </template>
+      </Column>
+    </DataTable>
 
     <!-- 페이지네이션 (팀원 스타일) -->
     <div class="pagination">
@@ -116,14 +131,20 @@
     />
 
     <AssetMoveModal v-if="showMoveModal" :onConfirm="confirmMove" :onClose="closeMoveModal" />
+
+    <!-- 편집 메뉴 -->
+    <Menu ref="menuRef" :model="menuItems" popup />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import { assetApi } from '@/api/assetApi'
+
+// PrimeVue
+import Menu from 'primevue/menu'
 
 // 공용 드롭다운
 import RootDropDownMenu from '@/components/common/RootDropDownMenu.vue'
@@ -151,6 +172,49 @@ const deleteTarget = ref(null)
 const showMoveModal = ref(false)
 const moveTarget = ref(null)
 
+// 정렬 상태
+const sortField = ref(null)
+const sortOrder = ref(null)
+
+// 편집 메뉴
+const menuRef = ref()
+const selectedAsset = ref(null)
+
+function openMenu(event, asset) {
+  selectedAsset.value = asset
+  menuRef.value.toggle(event)
+}
+
+const menuItems = computed(() => [
+  {
+    label: '수정',
+    icon: 'pi pi-pencil',
+    command: () => {
+      if (selectedAsset.value) {
+        editAsset(selectedAsset.value)
+      }
+    },
+  },
+  {
+    label: '이동',
+    icon: 'pi pi-arrows-h',
+    command: () => {
+      if (selectedAsset.value) {
+        openMoveModal(selectedAsset.value)
+      }
+    },
+  },
+  {
+    label: '삭제',
+    icon: 'pi pi-trash',
+    command: () => {
+      if (selectedAsset.value) {
+        deleteAsset(selectedAsset.value)
+      }
+    },
+  },
+])
+
 const typeMap = {
   STATIC: '정적 자원',
   DYNAMIC: '동적 자원',
@@ -162,21 +226,58 @@ const statusMap = {
   MAINTENANCE: '점검중',
 }
 
+// 상태별 Tag 색상
+function getStatusSeverity(status) {
+  const map = {
+    AVAILABLE: 'success',
+    UNAVAILABLE: 'danger',
+    MAINTENANCE: 'warning',
+  }
+  return map[status] || 'secondary'
+}
+
+// 프론트엔드 필드명을 백엔드 필드명으로 매핑
+function mapSortField(field) {
+  const fieldMap = {
+    name: 'name',
+    type: 'type',
+    status: 'status',
+    categoryName: 'categoryName',
+    needApproval: 'needApproval',
+    version: 'version',
+  }
+  return fieldMap[field] || field
+}
+
 async function loadAssets() {
-  const res = await api.get('/assets/descendants', {
-    params: {
-      page: page.value,
-      size: size.value,
-      root: building.value || null,
-      oneDepth: location.value || null,
-      categoryId: category.value || null,
-      type: type.value || null,
-      status: status.value || null,
-      keyword: keyword.value || null,
-    },
-  })
+  const params = {
+    page: page.value,
+    size: size.value,
+    root: building.value || null,
+    oneDepth: location.value || null,
+    categoryId: category.value || null,
+    type: type.value || null,
+    status: status.value || null,
+    keyword: keyword.value || null,
+  }
+
+  // 정렬 파라미터 추가 (Spring Data JPA 형식)
+  if (sortField.value) {
+    const direction = sortOrder.value === 1 ? 'asc' : 'desc'
+    const mappedField = mapSortField(sortField.value)
+    params.sort = `${mappedField},${direction}`
+  }
+
+  const res = await api.get('/assets/descendants', { params })
   assets.value = res.data.content
   total.value = res.data.totalElements
+}
+
+function onSort(event) {
+  sortField.value = event.sortField
+  sortOrder.value = event.sortOrder
+  page.value = 0 // 정렬 시 첫 페이지로 이동
+  loadAssets()
 }
 
 async function confirmDelete() {
@@ -231,8 +332,11 @@ function closeMoveModal() {
   showMoveModal.value = false
 }
 
-function goAssetDetail(row) {
-  router.push(`/admin/assets/${row.assetId}`) // 상세 페이지 경로
+function goAssetDetail(event) {
+  const row = event.data
+  if (row && row.assetId) {
+    router.push(`/admin/assets/${row.assetId}`)
+  }
 }
 
 onMounted(loadAssets)
@@ -313,10 +417,131 @@ onMounted(loadAssets)
 
 .actions {
   display: flex;
-  gap: 8px; /* 버튼 간 간격 */
-  white-space: nowrap; /* 줄 바꿈 방지 */
+  gap: 8px;
+  white-space: nowrap;
+  justify-content: center;
 }
+
 .actions button {
-  flex-shrink: 0; /* 버튼이 줄어들지 않도록 */
+  flex-shrink: 0;
+}
+
+/* PrimeVue DataTable 커스텀 스타일 */
+.asset-table {
+  width: 100%;
+  margin-top: 20px;
+}
+
+:deep(.custom-datatable) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.custom-datatable .p-datatable-table) {
+  table-layout: auto;
+  width: 100%;
+}
+
+:deep(.custom-header) {
+  background: #8ba3f5;
+  color: white;
+  font-weight: 600;
+  padding: 16px;
+}
+
+:deep(.custom-thead th) {
+  background: #8ba3f5;
+  color: white;
+  font-weight: 600;
+  padding: 16px 12px;
+  text-align: left;
+  border: none;
+  font-size: 14px;
+}
+
+:deep(.custom-thead th:hover) {
+  background: #7c94f0;
+}
+
+:deep(.custom-tbody tr) {
+  transition: background-color 0.2s ease;
+}
+
+:deep(.custom-tbody tr:hover) {
+  background-color: #f5f7fa;
+  cursor: pointer;
+}
+
+:deep(.custom-tbody td) {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+:deep(.p-datatable .p-sortable-column-icon) {
+  color: white;
+  margin-left: 8px;
+}
+
+:deep(.p-datatable .p-sortable-column:not(.p-highlight):hover) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:deep(.p-datatable .p-sortable-column.p-highlight) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+:deep(.p-tag) {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+/* 자원명 컬럼 - 제일 크게 차지 */
+:deep(.name-column) {
+  min-width: 300px;
+  width: 40%;
+}
+
+:deep(.name-column th),
+:deep(.name-column td) {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 16px;
+}
+
+/* 자원명 컬럼 정렬 아이콘 크게 */
+:deep(.name-column .p-sortable-column-icon) {
+  font-size: 18px;
+  margin-left: 8px;
+}
+
+/* 나머지 컬럼들 - 글씨 크기에 맞게 너비 차지 */
+:deep(.auto-width-column) {
+  width: auto;
+  white-space: nowrap;
+}
+
+:deep(.auto-width-column th),
+:deep(.auto-width-column td) {
+  padding: 14px 16px;
+  width: auto;
+}
+
+/* 편집 메뉴 버튼 스타일 */
+.menu-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-column {
+  width: 60px;
+  text-align: center;
+  white-space: nowrap;
 }
 </style>

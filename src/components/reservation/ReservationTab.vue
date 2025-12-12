@@ -1,11 +1,6 @@
 <template>
   <div class="tab-full-wrapper">
-    <el-tabs
-      v-model="active"
-      class="reservation-tabs"
-      @tab-click="onTabClick"
-      type="line"
-    >
+    <el-tabs v-model="active" class="reservation-tabs" @tab-click="onTabClick" type="line">
       <el-tab-pane label="예약 현황" name="status" />
       <el-tab-pane label="예약 가능 자원 목록" name="available" />
       <el-tab-pane label="예약 신청" name="createReservation" />
@@ -35,11 +30,44 @@ function getTabNameByRoute(path) {
 }
 
 function onTabClick(tab) {
+  console.log('🖱️ 탭 클릭:', tab.props.name, '현재 경로:', route.path)
+
+  let targetPath = ''
   switch (tab.props.name) {
     case 'status':
-      router.push('/app/reservations/me')
+      targetPath = '/app/reservations/me'
+      // 같은 경로에 있어도 이벤트를 발생시켜 데이터 새로고침
+      if (route.path === targetPath) {
+        console.log('📍 같은 경로 - 강제 새로고침')
+        setTimeout(() => {
+          console.log(
+            '📢 reservation-tab-changed 이벤트 발생 (같은 경로):',
+            tab.props.name,
+            targetPath,
+          )
+          window.dispatchEvent(
+            new CustomEvent('reservation-tab-changed', {
+              detail: { tab: tab.props.name, path: targetPath },
+            }),
+          )
+        }, 50)
+      } else {
+        router.push('/app/reservations/me').then(() => {
+          // 라우터 이동 완료 후 이벤트 발생 (Transition 완료 후 컴포넌트가 마운트된 후)
+          // Transition 애니메이션이 400ms이므로, 충분한 시간을 두고 이벤트 발생
+          setTimeout(() => {
+            console.log('📢 reservation-tab-changed 이벤트 발생:', tab.props.name, targetPath)
+            window.dispatchEvent(
+              new CustomEvent('reservation-tab-changed', {
+                detail: { tab: tab.props.name, path: targetPath },
+              }),
+            )
+          }, 500)
+        })
+      }
       break
     case 'available':
+      targetPath = '/app/reservations/available-assets'
       router.push('/app/reservations/available-assets')
       break
     case 'createReservation':
@@ -47,6 +75,7 @@ function onTabClick(tab) {
       active.value = getTabNameByRoute(route.path)
       break
     case 'applied':
+      targetPath = '/admin/reservations/applied'
       router.push('/admin/reservations/applied')
       break
   }
@@ -56,9 +85,12 @@ onMounted(async () => {
   await nextTick()
 })
 
-watch(() => route.path, newPath => {
-  active.value = getTabNameByRoute(newPath)
-})
+watch(
+  () => route.path,
+  (newPath) => {
+    active.value = getTabNameByRoute(newPath)
+  },
+)
 </script>
 
 <style scoped>
@@ -87,22 +119,28 @@ watch(() => route.path, newPath => {
   height: 40px !important;
   line-height: 40px !important;
   color: #6b7280;
+
+  /* 부드러운 색상 전환 */
+  transition:
+    color 0.3s ease,
+    font-weight 0.3s ease !important;
 }
 
 /* hover — 초록색 */
 .reservation-tabs :deep(.el-tabs__item:hover) {
-  color: #00A950 !important;
+  color: #00a950 !important;
 }
 
 /* active — 초록색 + 굵게 */
 .reservation-tabs :deep(.el-tabs__item.is-active) {
-  color: #00A950 !important;
+  color: #00a950 !important;
   font-weight: 600 !important;
 }
 
 /* 초록색 바 */
 .reservation-tabs :deep(.el-tabs__active-bar) {
-  background-color: #00A950 !important;
+  background-color: #00a950 !important;
   height: 3px !important;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
 }
 </style>

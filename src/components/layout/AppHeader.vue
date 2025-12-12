@@ -25,42 +25,112 @@ const searchableMenus = computed(() => {
 
   // 공통 메뉴
   menus.push(
-    { label: '대시보드', path: hasRole('ADMIN') ? '/admin' : '/app', keywords: ['대시보드', 'dashboard', '홈', '메인'] },
-    { label: '예약 관리', path: '/app/reservations/me', keywords: ['예약', 'reservation', '예약관리', '내예약', '예약목록'] },
-    { label: '일정 관리', path: '/app/reservations/monthly', keywords: ['일정', 'schedule', '일정관리', '스케줄', '캘린더', '월별', '주별'] },
-    { label: '예약 가능 자원', path: '/app/reservations/available-assets', keywords: ['예약가능', '자원', 'available', 'asset', '예약가능자원'] },
-    { label: '예약 신청', path: '/app/reservations/apply', keywords: ['예약신청', '신청', 'apply', '예약하기'] },
-    { label: '마이페이지', path: '/app/users/me', keywords: ['마이페이지', 'mypage', '내정보', '프로필', '정보수정'] }
+    {
+      label: '대시보드',
+      path: hasRole('ADMIN') ? '/admin' : '/app',
+      keywords: ['대시보드', 'dashboard', '홈', '메인'],
+    },
+    {
+      label: '예약 관리',
+      path: '/app/reservations/me',
+      keywords: ['예약', 'reservation', '예약관리', '내예약', '예약목록'],
+    },
+    {
+      label: '일정 관리',
+      path: '/app/reservations/monthly',
+      keywords: ['일정', 'schedule', '일정관리', '스케줄', '캘린더', '월별', '주별'],
+    },
+    {
+      label: '예약 가능 자원',
+      path: '/app/reservations/available-assets',
+      keywords: ['예약가능', '자원', 'available', 'asset', '예약가능자원'],
+    },
+    {
+      label: '예약 신청',
+      path: '/app/reservations/apply',
+      keywords: ['예약신청', '신청', 'apply', '예약하기'],
+    },
+    {
+      label: '마이페이지',
+      path: '/app/users/me',
+      keywords: ['마이페이지', 'mypage', '내정보', '프로필', '정보수정'],
+    },
   )
 
   // MANAGER 이상
   if (isAdminOrManager) {
     menus.push(
-      { label: '자원 관리', path: '/admin/assets', keywords: ['자원', 'asset', '자원관리', '리소스', '자원목록'] },
-      { label: '카테고리 관리', path: '/admin/assets/categories', keywords: ['카테고리', 'category', '카테고리관리'] },
-      { label: '신청 예약 관리', path: '/admin/reservations/applied', keywords: ['신청예약', 'applied', '예약승인', '승인대기'] },
-      { label: '자원 사용 기록', path: '/admin/accounting/usage-history', keywords: ['사용기록', 'usage', 'history', '기록'] },
-      { label: '사용 추이', path: '/admin/accounting/usage-trend', keywords: ['사용추이', 'trend', '추이', '통계'] },
-      { label: '운영 성과 분석', path: '/admin/accounting/performance', keywords: ['성과', 'performance', '분석', '성과분석'] },
-      { label: '분기 정산', path: '/admin/accounting/quarter', keywords: ['분기', 'quarter', '정산', '분기정산'] }
+      {
+        label: '자원 관리',
+        path: '/admin/assets',
+        keywords: ['자원', 'asset', '자원관리', '리소스', '자원목록'],
+      },
+      {
+        label: '카테고리 관리',
+        path: '/admin/assets/categories',
+        keywords: ['카테고리', 'category', '카테고리관리'],
+      },
+      {
+        label: '신청 예약 관리',
+        path: '/admin/reservations/applied',
+        keywords: ['신청예약', 'applied', '예약승인', '승인대기'],
+      },
+      {
+        label: '자원 사용 기록',
+        path: '/admin/accounting/usage-history',
+        keywords: ['사용기록', 'usage', 'history', '기록'],
+      },
+      {
+        label: '사용 추이',
+        path: '/admin/accounting/usage-trend',
+        keywords: ['사용추이', 'trend', '추이', '통계'],
+      },
+      {
+        label: '운영 성과 분석',
+        path: '/admin/accounting/performance',
+        keywords: ['성과', 'performance', '분석', '성과분석'],
+      },
+      {
+        label: '분기 정산',
+        path: '/admin/accounting/quarter',
+        keywords: ['분기', 'quarter', '정산', '분기정산'],
+      },
     )
   }
 
   // ADMIN 이상
   if (isAdminOnly) {
     menus.push(
-      { label: '유저 관리', path: '/admin/users', keywords: ['유저', 'user', '사용자', '유저관리', '사용자관리', '사용자목록'] },
-      { label: '역할 관리', path: '/admin/roles', keywords: ['역할', 'role', '역할관리', '역할목록'] },
-      { label: '권한 관리', path: '/admin/permissions/list', keywords: ['권한', 'permission', '권한관리', '권한목록', '매핑'] },
-      { label: '사용법 가이드', path: '/admin/guide', keywords: ['가이드', 'guide', '사용법', '설명서', '위키', '안내'] }
+      {
+        label: '유저 관리',
+        path: '/admin/users',
+        keywords: ['유저', 'user', '사용자', '유저관리', '사용자관리', '사용자목록'],
+      },
+      {
+        label: '역할 관리',
+        path: '/admin/roles',
+        keywords: ['역할', 'role', '역할관리', '역할목록'],
+      },
+      {
+        label: '권한 관리',
+        path: '/admin/permissions/list',
+        keywords: ['권한', 'permission', '권한관리', '권한목록', '매핑'],
+      },
+      {
+        label: '사용법 가이드',
+        path: '/admin/guide',
+        keywords: ['가이드', 'guide', '사용법', '설명서', '위키', '안내'],
+      },
     )
   }
 
   // 일반 사용자용 가이드
   if (!isAdminOnly) {
-    menus.push(
-      { label: '사용법 가이드', path: '/app/guide', keywords: ['가이드', 'guide', '사용법', '설명서', '위키'] }
-    )
+    menus.push({
+      label: '사용법 가이드',
+      path: '/app/guide',
+      keywords: ['가이드', 'guide', '사용법', '설명서', '위키'],
+    })
   }
 
   return menus
@@ -73,9 +143,9 @@ const filteredMenus = computed(() => {
   }
 
   const query = searchQuery.value.toLowerCase().trim()
-  return searchableMenus.value.filter(menu => {
+  return searchableMenus.value.filter((menu) => {
     const labelMatch = menu.label.toLowerCase().includes(query)
-    const keywordMatch = menu.keywords.some(keyword => keyword.toLowerCase().includes(query))
+    const keywordMatch = menu.keywords.some((keyword) => keyword.toLowerCase().includes(query))
     return labelMatch || keywordMatch
   })
 })
@@ -262,32 +332,33 @@ function getBreadcrumbPath(label, currentPath) {
     '유저 관리': '/admin/users',
     '역할 관리': '/admin/roles',
     '권한 관리': '/admin/permissions/list',
-    '자원': '/admin/assets',
+    자원: '/admin/assets',
     '자원 목록 조회': '/admin/assets',
     '자원 등록': '/admin/assets/create',
     '자원 사용 기록 조회': '/admin/accounting/usage-history',
     '사용 추이': '/admin/accounting/usage-trend',
     '운영 성과 분석': '/admin/accounting/performance',
     '분기 정산': '/admin/accounting/quarter',
-    '예약': '/app/reservations/me',
+    예약: '/app/reservations/me',
     '가능 자원': '/app/reservations/available-assets',
     '사용자 예약': '/app/reservations/me',
+    '마이 페이지': '/app/users/me',
     '신청 예약': '/admin/reservations/applied',
     '스케쥴 확인': '/app/reservations/monthly',
-    '신청하기': '/app/reservations/apply',
-    '예약하기': '/app/reservations/create-reservation',
+    신청하기: '/app/reservations/apply',
+    예약하기: '/app/reservations/create-reservation',
     '카테고리 관리': '/admin/assets/categories',
     '정산 관리': '/admin/accounting/usage-history',
     '일정 관리': '/app/reservations/monthly',
     '예약 관리': '/app/reservations/me',
-    '설명서': hasRole('ADMIN') ? '/admin/guide' : '/app/guide',
+    설명서: hasRole('ADMIN') ? '/admin/guide' : '/app/guide',
   }
-  
+
   // 자원 수정은 동적 경로이므로 현재 경로 사용
   if (label === '자원 수정') {
     return currentPath
   }
-  
+
   return pathMap[label] || currentPath
 }
 
@@ -306,15 +377,21 @@ const breadcrumbItems = computed(() => {
   if (segments.length === 0) return []
 
   // 중복 제거: permissions와 list가 연속으로 오면 permissions만 표시
+  // 숫자 세그먼트(PK)는 breadcrumb에서 제외
   const filtered = []
   for (let i = 0; i < segments.length; i++) {
     const current = segments[i]
     const next = segments[i + 1]
-    
+
     // permissions 다음에 list가 오면 list는 건너뛰기
     if (current === 'permissions' && next === 'list') {
       filtered.push(current)
       i++ // list도 건너뛰기
+    }
+    // 숫자 세그먼트(PK)는 breadcrumb에서 제외
+    else if (/^\d+$/.test(current)) {
+      // 숫자 세그먼트는 건너뛰기 (PK이므로 표시하지 않음)
+      continue
     } else {
       filtered.push(current)
     }
@@ -323,43 +400,52 @@ const breadcrumbItems = computed(() => {
   // IAM 관련 페이지 처리: users, roles, permissions를 "유저 관리"로 통합
   const items = []
   let currentPath = basePath
-  
+
   for (let i = 0; i < filtered.length; i++) {
     const current = filtered[i]
     const prev = i > 0 ? filtered[i - 1] : null
     currentPath += '/' + current
-    
+
+    // users 다음에 me가 오는 경우 "마이 페이지"로 표시
+    if (prev === 'users' && current === 'me') {
+      items.push({
+        label: '마이 페이지',
+        path: currentPath,
+      })
+      continue
+    }
+
     // users 다음에 숫자(userId)가 오는 경우 "사용자 상세 조회"로 표시
     if (prev === 'users' && /^\d+$/.test(current)) {
       items.push({
         label: '사용자 상세 조회',
-        path: currentPath
+        path: currentPath,
       })
       continue
     }
-    
+
     // IAM 관련 페이지인 경우
     if (current === 'users' || current === 'roles' || current === 'permissions') {
       // 첫 번째 IAM 페이지면 "유저 관리" 추가
       if (items.length === 0 || items[items.length - 1].label !== '유저 관리') {
         items.push({
           label: '유저 관리',
-          path: '/admin/users'
+          path: '/admin/users',
         })
       }
-      
+
       // 현재 페이지에 맞는 하위 항목 추가
       if (current === 'users') {
         // users는 이미 "유저 관리"로 표시되므로 추가하지 않음
       } else if (current === 'roles') {
         items.push({
           label: '역할 관리',
-          path: '/admin/roles'
+          path: '/admin/roles',
         })
       } else if (current === 'permissions') {
         items.push({
           label: '권한 관리',
-          path: '/admin/permissions/list'
+          path: '/admin/permissions/list',
         })
       }
     } else {
@@ -397,23 +483,21 @@ const breadcrumbItems = computed(() => {
           <span
             v-else
             class="breadcrumb-item"
-            :class="{ 'current': index === breadcrumbItems.length - 1 }"
+            :class="{ current: index === breadcrumbItems.length - 1 }"
           >
             {{ item.label }}
           </span>
-          <span
-            v-if="index < breadcrumbItems.length - 1"
-            class="breadcrumb-divider"
-          >
-            / 
-          </span>
+          <span v-if="index < breadcrumbItems.length - 1" class="breadcrumb-divider"> / </span>
         </template>
       </div>
     </div>
 
     <div class="right">
       <div class="search-box-wrapper">
-        <div class="search-box" :class="{ 'has-results': showSearchResults && filteredMenus.length > 0 }">
+        <div
+          class="search-box"
+          :class="{ 'has-results': showSearchResults && filteredMenus.length > 0 }"
+        >
           <i class="ri-search-line"></i>
           <input
             v-model="searchQuery"
@@ -424,14 +508,14 @@ const breadcrumbItems = computed(() => {
             @focus="showSearchResults = searchQuery.trim().length > 0"
           />
         </div>
-        
+
         <!-- 검색 결과 드롭다운 -->
         <div v-if="showSearchResults && filteredMenus.length > 0" class="search-results">
           <div
             v-for="(menu, index) in filteredMenus"
             :key="menu.path"
             class="search-result-item"
-            :class="{ 'selected': selectedIndex === index }"
+            :class="{ selected: selectedIndex === index }"
             @click="navigateToMenu(menu)"
             @mouseenter="selectedIndex = index"
           >
@@ -439,9 +523,12 @@ const breadcrumbItems = computed(() => {
             <span>{{ menu.label }}</span>
           </div>
         </div>
-        
+
         <!-- 검색 결과 없음 -->
-        <div v-if="showSearchResults && searchQuery.trim() && filteredMenus.length === 0" class="search-results">
+        <div
+          v-if="showSearchResults && searchQuery.trim() && filteredMenus.length === 0"
+          class="search-results"
+        >
           <div class="search-no-results">
             <span>검색 결과가 없습니다</span>
           </div>
@@ -701,4 +788,3 @@ const breadcrumbItems = computed(() => {
   font-size: 20px;
 }
 </style>
-

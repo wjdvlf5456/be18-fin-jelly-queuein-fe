@@ -51,12 +51,31 @@ function closeHover() {
 const previousPath = ref(null)
 const transitionName = ref('fade')
 
+// 예약 탭 경로 순서 정의 (슬라이드 방향 결정용)
+const reservationRouteOrder = {
+  '/app/reservations/me': 1,
+  '/app/reservations/available-assets': 2,
+  '/app/reservations/create-reservation': 3,
+  '/app/reservations/apply': 3,
+  '/admin/reservations/applied': 4,
+}
+
 // 경로 변경 감지 및 Transition 이름 결정
 watch(
   () => route.path,
   (newPath, oldPath) => {
-    // 기본적으로 페이드 전환 사용
-    transitionName.value = 'fade'
+    // 예약 탭 간 이동인지 확인
+    const currentOrder = reservationRouteOrder[newPath]
+    const prevOrder = oldPath ? reservationRouteOrder[oldPath] : null
+
+    if (currentOrder && prevOrder) {
+      // 순서가 증가하면 우측 슬라이드, 감소하면 좌측 슬라이드
+      transitionName.value = currentOrder > prevOrder ? 'slide-left' : 'slide-right'
+    } else {
+      // 예약 탭이 아니면 기본 페이드
+      transitionName.value = 'fade'
+    }
+
     previousPath.value = oldPath
 
     // 경로 변경 정보를 sessionStorage에 저장 (컴포넌트 재생성 시 사용)
@@ -149,11 +168,15 @@ function onTransitionEnter() {
 .content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* 슬라이드 애니메이션을 위한 overflow-x 숨김 */
 
   /* 화면 내용은 적당히 padding 유지 */
   padding: 20px;
   background: white;
   box-sizing: border-box;
+
+  /* 전환 효과를 위한 position 설정 */
+  position: relative;
 }
 
 /* ===== 오버레이 ===== */
@@ -176,5 +199,36 @@ function onTransitionEnter() {
 .fade-leave-to {
   opacity: 0;
 }
-</style>
 
+/* 슬라이드 전환 (좌측에서 우측으로) */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* 슬라이드 전환 (우측에서 좌측으로) */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+</style>

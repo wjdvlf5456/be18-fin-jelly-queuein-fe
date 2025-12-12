@@ -90,11 +90,11 @@
           </td>
         </tr>
 
-        <!-- 이미지 URL -->
+        <!-- 이미지 업로드 -->
         <tr>
-          <th>이미지 URL</th>
+          <th>이미지</th>
           <td>
-            <input v-model="form.image" class="input" placeholder="https://example.com/asset.jpg" />
+            <S3ImageUploader v-model="form.image" />
           </td>
         </tr>
 
@@ -123,6 +123,7 @@ import { ref } from 'vue'
 import CategoryDropDownMenu from '@/components/common/CategoryDropDownMenu.vue'
 import AssetStatusDropdown from '@/components/common/AssetStatusDropdown.vue'
 import AssetTypeDropdown from '@/components/common/AssetTypeDropdown.vue'
+import S3ImageUploader from '@/components/common/S3ImageUploader.vue'
 
 const props = defineProps({
   initialData: { type: Object, default: () => ({}) },
@@ -154,38 +155,59 @@ function submit() {
 <style scoped>
 .asset-form-wrapper {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
+  color: #1f2937;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .form-table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 th {
   width: 250px;
-  background: #b9cdb4;
-  padding: 14px;
+  background: linear-gradient(135deg, #b9cdb4 0%, #a8c09f 100%);
+  padding: 16px 20px;
   text-align: left;
-  font-weight: 700;
-  border-bottom: 1px solid #e8e8e8;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 td {
-  padding: 14px;
-  border-bottom: 1px solid #e8e8e8;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
 }
 
 .input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #00a950;
+  box-shadow: 0 0 0 3px rgba(0, 169, 80, 0.1);
 }
 
 .readonly-input[disabled] {
@@ -198,22 +220,48 @@ td {
 .textarea {
   width: 100%;
   height: 120px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  resize: none;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  resize: vertical;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #00a950;
+  box-shadow: 0 0 0 3px rgba(0, 169, 80, 0.1);
 }
 
 .btn-wrapper {
   text-align: right;
-  margin-top: 20px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .submit-btn {
-  padding: 10px 20px;
-  border: 1px solid #c7dbcc;
-  background: #e6f0e6;
-  border-radius: 6px;
+  padding: 12px 32px;
+  border: none;
+  background: linear-gradient(135deg, #00a950 0%, #10b981 100%);
+  color: white;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 169, 80, 0.2);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 169, 80, 0.3);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
 }
 </style>

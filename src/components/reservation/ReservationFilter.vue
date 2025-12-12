@@ -133,7 +133,7 @@ watch(
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 20px 0;
+  margin: 0;
 }
 
 /* 모든 el-col은 동일 크기로 강제 */
@@ -186,6 +186,11 @@ watch(
   gap: 12px;
   width: 100%;
   align-items: center;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
 }
 
 /* 드롭다운/검색창 공통 비율 */
@@ -197,26 +202,57 @@ watch(
 /* 드롭다운 내부의 select 는 셀 폭에 맞게 꽉 채움 */
 .cell select {
   width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.cell select:focus {
+  outline: none;
+  border-color: #00a950;
+  box-shadow: 0 0 0 3px rgba(0, 169, 80, 0.1);
 }
 
 /* 검색 입력창 비율 처리 */
 .search-box input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #00a950;
+  box-shadow: 0 0 0 3px rgba(0, 169, 80, 0.1);
 }
 
 /* 검색 버튼은 고정폭 */
 .search-btn {
-  padding: 10px 18px;
-  background: #c7dbcc;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #00a950 0%, #10b981 100%);
+  color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 169, 80, 0.2);
+}
+
+.search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 169, 80, 0.3);
+}
+
+.search-btn:active {
+  transform: translateY(0);
 }
 </style>

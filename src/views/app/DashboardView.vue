@@ -26,10 +26,10 @@ const today = computed(() => {
 // 통계
 const stats = computed(() => {
   const total = todayReservations.value.length
-  const approved = todayReservations.value.filter(r => r.status === 'APPROVED').length
-  const pending = todayReservations.value.filter(r => r.status === 'PENDING').length
-  const using = todayReservations.value.filter(r => r.status === 'USING').length
-  
+  const approved = todayReservations.value.filter((r) => r.status === 'APPROVED').length
+  const pending = todayReservations.value.filter((r) => r.status === 'PENDING').length
+  const using = todayReservations.value.filter((r) => r.status === 'USING').length
+
   return { total, approved, pending, using }
 })
 
@@ -45,7 +45,7 @@ async function loadData() {
     const reservationRes = await reservationApi.getUserReservations({
       page: 0,
       size: 10,
-      date: today.value
+      date: today.value,
     })
     todayReservations.value = reservationRes.data.content || []
   } catch (e) {
@@ -63,7 +63,7 @@ function getStatusSeverity(status) {
     REJECTED: 'danger',
     USING: 'info',
     COMPLETED: 'secondary',
-    CANCELED: 'danger'
+    CANCELED: 'danger',
   }
   return map[status] || 'secondary'
 }
@@ -75,7 +75,7 @@ function getStatusLabel(status) {
     REJECTED: '거부됨',
     USING: '사용중',
     COMPLETED: '완료',
-    CANCELED: '취소됨'
+    CANCELED: '취소됨',
   }
   return map[status] || status
 }
@@ -127,7 +127,7 @@ watch(
       }, 100)
     }
   },
-  { immediate: false }
+  { immediate: false },
 )
 </script>
 
@@ -136,7 +136,8 @@ watch(
     <!-- 환영 메시지 -->
     <div class="welcome-section">
       <h1 class="welcome-title">
-        안녕하세요, <span class="user-name">{{ userInfo?.userName || '사용자' }}</span>님! 👋
+        안녕하세요, <span class="user-name">{{ userInfo?.userName || '사용자' }}</span
+        >님! 👋
       </h1>
       <p class="welcome-subtitle">오늘도 QueueIn과 함께 효율적인 자원 관리를 시작하세요.</p>
     </div>
@@ -267,7 +268,10 @@ watch(
           </Column>
           <Column field="status" header="상태">
             <template #body="{ data }">
-              <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
+              <Tag
+                :value="getStatusLabel(data.status)"
+                :severity="getStatusSeverity(data.status)"
+              />
             </template>
           </Column>
         </DataTable>
@@ -336,7 +340,9 @@ watch(
 .stat-card {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .stat-card:hover {
@@ -430,6 +436,7 @@ watch(
 
 /* 가이드 카드 */
 .guide-card {
+  margin-top: 200px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

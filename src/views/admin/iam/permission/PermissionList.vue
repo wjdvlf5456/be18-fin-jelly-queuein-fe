@@ -1,15 +1,15 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from "vue"
-import { permissionApi } from "@/api/iam/permissionApi"
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { permissionApi } from '@/api/iam/permissionApi'
 import { roleApi } from '@/api/iam/roleApi.js'
-import { useRouter } from "vue-router"
-import Button from "primevue/button"
-import DataTable from "primevue/datatable"
-import Column from "primevue/column"
+import { useRouter } from 'vue-router'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Dialog from 'primevue/dialog'
-import { ElMessageBox, ElMessage } from "element-plus"
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/authStore'
 import IamTabs from '@/components/iam/IamTabs.vue'
 import { diffChanges } from '@/utils/permissionDiff'
@@ -17,7 +17,7 @@ import { diffChanges } from '@/utils/permissionDiff'
 const router = useRouter()
 const auth = useAuthStore()
 
-const isMaster = auth.role === "MASTER"
+const isMaster = auth.role === 'MASTER'
 
 // 권한 목록 관련
 const permissions = ref([])
@@ -25,9 +25,13 @@ const permissions = ref([])
 // 권한 카테고리 분류 함수 (prefix 기반)
 function getPermissionCategory(permissionName) {
   const name = permissionName.toUpperCase()
-  
+
   // IAM 관련 (사용자, 역할, 권한)
-  if (name.startsWith('IAM_USER_') || name.startsWith('IAM_ROLE_') || name.startsWith('IAM_PERMISSION_')) {
+  if (
+    name.startsWith('IAM_USER_') ||
+    name.startsWith('IAM_ROLE_') ||
+    name.startsWith('IAM_PERMISSION_')
+  ) {
     return '사용자'
   }
   // 예약 관련
@@ -35,11 +39,19 @@ function getPermissionCategory(permissionName) {
     return '예약'
   }
   // 자원 관련 (ASSET, RESOURCE, INVENTORY, CATEGORY)
-  else if (name.startsWith('ASSET_') || name.startsWith('RESOURCE_') || name.startsWith('INVENTORY_')) {
+  else if (
+    name.startsWith('ASSET_') ||
+    name.startsWith('RESOURCE_') ||
+    name.startsWith('INVENTORY_')
+  ) {
     return '자원'
   }
   // 정산 관련
-  else if (name.startsWith('ACCOUNTING_') || name.startsWith('SETTLEMENT_') || name.startsWith('USAGE_')) {
+  else if (
+    name.startsWith('ACCOUNTING_') ||
+    name.startsWith('SETTLEMENT_') ||
+    name.startsWith('USAGE_')
+  ) {
     return '정산'
   }
   // 기타
@@ -49,18 +61,18 @@ function getPermissionCategory(permissionName) {
 // 카테고리별로 그룹화된 권한
 const groupedPermissions = computed(() => {
   const groups = {
-    '사용자': [],
-    '예약': [],
-    '자원': [],
-    '정산': [],
-    '기타': []
+    사용자: [],
+    예약: [],
+    자원: [],
+    정산: [],
+    기타: [],
   }
-  
+
   if (!permissions.value || !Array.isArray(permissions.value)) {
     return groups
   }
-  
-  permissions.value.forEach(perm => {
+
+  permissions.value.forEach((perm) => {
     if (perm && perm.permissionName) {
       const category = getPermissionCategory(perm.permissionName)
       if (groups[category]) {
@@ -70,7 +82,7 @@ const groupedPermissions = computed(() => {
       }
     }
   })
-  
+
   return groups
 })
 
@@ -116,7 +128,9 @@ async function loadMatrix() {
       roles.value.map((r) => [
         r.roleId,
         // MASTER 역할은 항상 true로 설정
-        r.roleName === 'MASTER' ? true : r.permissions.some((x) => x.permissionId === perm.permissionId),
+        r.roleName === 'MASTER'
+          ? true
+          : r.permissions.some((x) => x.permissionId === perm.permissionId),
       ]),
     ),
   }))
@@ -138,18 +152,18 @@ const filteredMatrix = computed(() => {
 // Matrix를 카테고리별로 그룹화
 const groupedMatrix = computed(() => {
   const groups = {
-    '사용자': [],
-    '예약': [],
-    '자원': [],
-    '정산': [],
-    '기타': []
+    사용자: [],
+    예약: [],
+    자원: [],
+    정산: [],
+    기타: [],
   }
-  
+
   if (!filteredMatrix.value || !Array.isArray(filteredMatrix.value)) {
     return groups
   }
-  
-  filteredMatrix.value.forEach(perm => {
+
+  filteredMatrix.value.forEach((perm) => {
     if (perm && perm.name) {
       const category = getPermissionCategory(perm.name)
       if (groups[category]) {
@@ -159,7 +173,7 @@ const groupedMatrix = computed(() => {
       }
     }
   })
-  
+
   return groups
 })
 
@@ -172,7 +186,7 @@ function manualToggle(row, roleId, roleName) {
     row.roles[roleId] = true
     return
   }
-  
+
   row.roles[roleId] = !row.roles[roleId]
   changes.value = diffChanges(original.value, matrix.value, roles.value)
 }
@@ -230,19 +244,17 @@ async function createPermission() {
 // 삭제
 async function onDelete(item) {
   try {
-    await ElMessageBox.confirm(
-      `권한 "${item.permissionName}" 을(를) 삭제하시겠습니까?`,
-      "확인",
-      { type: "warning" }
-    )
+    await ElMessageBox.confirm(`권한 "${item.permissionName}" 을(를) 삭제하시겠습니까?`, '확인', {
+      type: 'warning',
+    })
 
     await permissionApi.deletePermission(item.permissionId)
 
-    ElMessage.success("삭제되었습니다.")
+    ElMessage.success('삭제되었습니다.')
     await load()
     await loadMatrix()
   } catch (err) {
-    if (err !== "cancel") ElMessage.error("삭제 실패")
+    if (err !== 'cancel') ElMessage.error('삭제 실패')
   }
 }
 
@@ -268,10 +280,7 @@ onMounted(() => {
 
     <!-- 내부 탭 (목록 / 매핑) -->
     <div class="internal-tabs">
-      <button
-        :class="['tab-btn', { active: activeTab === 'list' }]"
-        @click="activeTab = 'list'"
-      >
+      <button :class="['tab-btn', { active: activeTab === 'list' }]" @click="activeTab = 'list'">
         권한 목록
       </button>
       <button
@@ -285,60 +294,45 @@ onMounted(() => {
     <!-- 권한 목록 탭 -->
     <div v-if="activeTab === 'list'" class="list-view">
       <div class="toolbar">
-        <Button
-          v-if="isMaster"
-          label="권한 생성"
-          icon="pi pi-plus"
-          @click="showCreate = true"
-        />
+        <Button v-if="isMaster" label="권한 생성" icon="pi pi-plus" @click="showCreate = true" />
       </div>
 
       <!-- 카테고리별 권한 그룹 -->
       <div class="permission-categories">
-        <template
-          v-for="(category, categoryName) in groupedPermissions"
-          :key="categoryName"
-        >
-          <div
-            v-if="category && category.length > 0"
-            class="category-section"
-          >
-          <div class="category-header">
-            <h3 class="category-title">{{ categoryName }}</h3>
-            <span class="category-count">{{ category.length }}개 권한</span>
-          </div>
-          
-          <div class="permission-cards">
-            <div
-              v-for="perm in category"
-              :key="perm.permissionId"
-              class="permission-card"
-            >
-              <div class="permission-header">
-                <div class="permission-name">{{ perm.permissionName }}</div>
-                <div class="permission-actions">
-                  <Button
-                    label="수정"
-                    size="small"
-                    icon="pi pi-pencil"
-                    text
-                    @click="router.push(`/admin/permissions/${perm.permissionId}/edit`)"
-                  />
-                  <Button
-                    v-if="isMaster"
-                    label="삭제"
-                    size="small"
-                    icon="pi pi-trash"
-                    severity="danger"
-                    text
-                    @click="onDelete(perm)"
-                  />
+        <template v-for="(category, categoryName) in groupedPermissions" :key="categoryName">
+          <div v-if="category && category.length > 0" class="category-section">
+            <div class="category-header">
+              <h3 class="category-title">{{ categoryName }}</h3>
+              <span class="category-count">{{ category.length }}개 권한</span>
+            </div>
+
+            <div class="permission-cards">
+              <div v-for="perm in category" :key="perm.permissionId" class="permission-card">
+                <div class="permission-header">
+                  <div class="permission-name">{{ perm.permissionName }}</div>
+                  <div class="permission-actions">
+                    <Button
+                      label="수정"
+                      size="small"
+                      icon="pi pi-pencil"
+                      text
+                      @click="router.push(`/admin/permissions/${perm.permissionId}/edit`)"
+                    />
+                    <Button
+                      v-if="isMaster"
+                      label="삭제"
+                      size="small"
+                      icon="pi pi-trash"
+                      severity="danger"
+                      text
+                      @click="onDelete(perm)"
+                    />
+                  </div>
                 </div>
+                <div class="permission-description">{{ perm.permissionDescription || '-' }}</div>
               </div>
-              <div class="permission-description">{{ perm.permissionDescription || '-' }}</div>
             </div>
           </div>
-        </div>
         </template>
       </div>
     </div>
@@ -383,25 +377,19 @@ onMounted(() => {
 
       <!-- Search & Add -->
       <div class="matrix-toolbar">
-        <InputText v-model="keyword" placeholder="Search permissions..." class="search-input" />
+        <InputText v-model="keyword" placeholder="권한 검색하기" class="search-input" />
         <Button label="권한 추가" icon="pi pi-plus" class="add-btn" @click="showCreate = true" />
       </div>
 
       <!-- 카테고리별 Matrix 그룹 -->
       <div class="matrix-categories">
-        <template
-          v-for="(category, categoryName) in groupedMatrix"
-          :key="categoryName"
-        >
-          <div
-            v-if="category && category.length > 0"
-            class="matrix-category-section"
-          >
+        <template v-for="(category, categoryName) in groupedMatrix" :key="categoryName">
+          <div v-if="category && category.length > 0" class="matrix-category-section">
             <div class="matrix-category-header">
               <h3 class="matrix-category-title">{{ categoryName }}</h3>
               <span class="matrix-category-count">{{ category.length }}개 권한</span>
             </div>
-            
+
             <div class="matrix-table-wrapper">
               <DataTable :value="category" :rowKey="'key'" stripedRows class="perm-table">
                 <Column header="Permission" field="name">
@@ -601,6 +589,7 @@ onMounted(() => {
 /* Matrix Toolbar */
 .matrix-toolbar {
   display: flex;
+  justify-content: flex-end;
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -636,7 +625,7 @@ onMounted(() => {
 }
 
 .add-btn {
-  background: #000;
+  background: #22c55e !important;
   border: none;
   color: white;
 }
