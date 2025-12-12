@@ -1,111 +1,108 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
-import { userApi } from "@/api/iam/userApi.js";
+import { ref, onMounted, computed } from 'vue'
+import { userApi } from '@/api/iam/userApi.js'
 
-import InputText from "primevue/inputtext";
-import Password from "primevue/password";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import DatePicker from "primevue/datepicker";
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import DatePicker from 'primevue/datepicker'
 
 // ===============================
 // 상태
 // ===============================
-const me = ref(null);
+const me = ref(null)
 
 const form = ref({
-  userName: "",
-  email: "",
-  birth: null,     // Date 객체
-  phone: ""
-});
+  userName: '',
+  email: '',
+  birth: null, // Date 객체
+  phone: '',
+})
 
 // -----------------------------
 // 연락처 raw + computed 강제 제어
 // -----------------------------
-const rawPhone = ref("");
+const rawPhone = ref('')
 
 const phone = computed({
   get() {
-    return rawPhone.value;
+    return rawPhone.value
   },
   set(value) {
-    rawPhone.value = formatPhone(value);
-  }
-});
+    rawPhone.value = formatPhone(value)
+  },
+})
 
 function onPhoneInput(e) {
   rawPhone.value = formatPhone(e.target.value)
 }
 
-
 // -----------------------------
 // 비밀번호
 // -----------------------------
 const pwForm = ref({
-  oldPassword: "",
-  newPassword: ""
-});
+  oldPassword: '',
+  newPassword: '',
+})
 
 // -----------------------------
 // 이미지 업로드
 // -----------------------------
-const fileInput = ref(null);
+const fileInput = ref(null)
 
 function openFileSelector() {
-  fileInput.value.click();
+  fileInput.value.click()
 }
 
 function onFileSelected(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]
+  if (!file) return
 
   // 현재는 업로드는 없음 → preview 추가 가능
-  console.log("선택된 파일:", file);
+  console.log('선택된 파일:', file)
 }
 
 // ===============================
 // 데이터 로딩
 // ===============================
 async function loadMe() {
-  const res = await userApi.getMe();
-  me.value = res.data;
+  const res = await userApi.getMe()
+  me.value = res.data
 
-  form.value.userName = res.data.userName;
-  form.value.email = res.data.email;
+  form.value.userName = res.data.userName
+  form.value.email = res.data.email
 
-  rawPhone.value = res.data.phone || "";
+  rawPhone.value = res.data.phone || ''
 
   // birth 문자열 → Date 객체 변환
   if (res.data.birth) {
-    const d = new Date(res.data.birth);
-    if (!isNaN(d)) form.value.birth = d;
+    const d = new Date(res.data.birth)
+    if (!isNaN(d)) form.value.birth = d
   }
 }
 
-onMounted(loadMe);
+onMounted(loadMe)
 
 // ===============================
 // 저장 로직
 // ===============================
 async function saveMyInfo() {
   try {
-    form.value.phone = rawPhone.value;
+    form.value.phone = rawPhone.value
 
     const payload = {
       userName: form.value.userName,
       phone: form.value.phone,
-      birth: form.value.birth
-        ? form.value.birth.toISOString().slice(0, 10)
-        : null
-    };
+      birth: form.value.birth ? form.value.birth.toISOString().slice(0, 10) : null,
+    }
 
-    await userApi.updateMe(payload);
-    alert("내 정보가 수정되었습니다.");
-    loadMe();
+    await userApi.updateMe(payload)
+    alert('내 정보가 수정되었습니다.')
+    loadMe()
   } catch (e) {
-    console.error(e);
-    alert("수정 중 오류가 발생했습니다.");
+    console.error(e)
+    alert('수정 중 오류가 발생했습니다.')
   }
 }
 
@@ -113,17 +110,68 @@ async function saveMyInfo() {
 // 비밀번호 변경
 // ===============================
 async function changePassword() {
+  // 유효성 검사
+  if (!pwForm.value.oldPassword || !pwForm.value.newPassword) {
+    alert('현재 비밀번호와 새 비밀번호를 모두 입력해주세요.')
+    return
+  }
+
+  if (pwForm.value.newPassword.length < 8) {
+    alert('새 비밀번호는 최소 8자 이상이어야 합니다.')
+    return
+  }
+
+  if (pwForm.value.oldPassword === pwForm.value.newPassword) {
+    alert('새 비밀번호는 현재 비밀번호와 다르게 설정해주세요.')
+    return
+  }
+
   try {
-    await userApi.changePassword({
+    // 토큰 확인 (디버깅용)
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      alert('인증 토큰이 없습니다. 다시 로그인해주세요.')
+      window.location.href = '/'
+      return
+    }
+
+    const payload = {
       oldPassword: pwForm.value.oldPassword,
-      newPassword: pwForm.value.newPassword
-    });
-    alert("비밀번호가 변경되었습니다.");
-    pwForm.value.oldPassword = "";
-    pwForm.value.newPassword = "";
+      newPassword: pwForm.value.newPassword,
+    }
+
+    await userApi.changePassword(payload)
+    alert('비밀번호가 변경되었습니다.')
+    pwForm.value.oldPassword = ''
+    pwForm.value.newPassword = ''
   } catch (e) {
-    console.error(e);
-    alert("비밀번호 변경 실패");
+    console.error('비밀번호 변경 실패:', e)
+
+    // 에러 메시지 추출
+    let errorMessage = '비밀번호 변경에 실패했습니다.'
+
+    if (e.response) {
+      const status = e.response.status
+      const data = e.response.data
+
+      if (status === 401) {
+        errorMessage = data?.message || '인증이 필요합니다. 다시 로그인해주세요.'
+        // 401 오류 시 로그인 페이지로 이동
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 2000)
+      } else if (status === 400) {
+        errorMessage = data?.message || '요청 형식이 올바르지 않습니다. 입력 정보를 확인해주세요.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '비밀번호 변경 권한이 없습니다.'
+      } else {
+        errorMessage = data?.message || `서버 오류가 발생했습니다. (${status})`
+      }
+    } else if (e.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    alert(errorMessage)
   }
 }
 
@@ -131,35 +179,33 @@ async function changePassword() {
 // 연락처 포맷팅
 // ===============================
 function formatPhone(value) {
-  if (!value) return "";
+  if (!value) return ''
 
-  value = value.replace(/\D/g, "");
+  value = value.replace(/\D/g, '')
 
-  if (value.length > 11) value = value.slice(0, 11);
+  if (value.length > 11) value = value.slice(0, 11)
 
   if (value.length === 11) {
-    return value.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    return value.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
   }
   if (value.length >= 7) {
-    return value.replace(/(\d{3})(\d{4})(\d+)/, "$1-$2-$3");
+    return value.replace(/(\d{3})(\d{4})(\d+)/, '$1-$2-$3')
   }
   if (value.length >= 4) {
-    return value.replace(/(\d{3})(\d+)/, "$1-$2");
+    return value.replace(/(\d{3})(\d+)/, '$1-$2')
   }
 
-  return value;
+  return value
 }
 </script>
 
 <template>
   <div class="mypage-wrapper" v-if="me">
-
     <h2 class="title">마이페이지</h2>
     <p class="subtitle">내 계정 정보를 확인하고 수정할 수 있습니다.</p>
 
     <Card class="mypage-card">
       <template #content>
-
         <!-- 두 열 구조 -->
         <div class="layout">
           <!-- 프로필 -->
@@ -171,7 +217,7 @@ function formatPhone(value) {
               type="file"
               accept="image/*"
               ref="fileInput"
-              style="display:none"
+              style="display: none"
               @change="onFileSelected"
             />
           </div>
@@ -182,7 +228,6 @@ function formatPhone(value) {
 
             <!-- 입력 필드 세로 정렬 -->
             <div class="form-vertical">
-
               <div class="field">
                 <label>이름</label>
                 <InputText v-model="form.userName" class="input-lg" />
@@ -205,7 +250,7 @@ function formatPhone(value) {
 
               <div class="field">
                 <label>생년월일</label>
-                <br>
+                <br />
                 <DatePicker
                   v-model="form.birth"
                   dateFormat="yy-mm-dd"
@@ -257,13 +302,16 @@ function formatPhone(value) {
             </div>
           </div>
 
-
           <!-- 비밀번호 변경 -->
           <div class="btn-row">
-            <Button label="비밀번호 변경" class="pw-btn" severity="danger" @click="changePassword" />
+            <Button
+              label="비밀번호 변경"
+              class="pw-btn"
+              severity="danger"
+              @click="changePassword"
+            />
           </div>
         </div>
-
       </template>
     </Card>
   </div>
@@ -383,11 +431,9 @@ h3 {
   width: 100% !important;
 }
 
-
 .btn-row {
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
 }
-
 </style>

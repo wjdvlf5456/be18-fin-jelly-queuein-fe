@@ -14,11 +14,31 @@ const activeIndex = ref(0)
 
 // 목차 항목
 const tocItems = [
-  { id: 'reservation-apply', label: '예약 신청하기', icon: 'pi pi-calendar-plus', path: '/app/reservations/me' },
-  { id: 'reservation-list', label: '내 예약 조회하기', icon: 'pi pi-list', path: '/app/reservations/me' },
-  { id: 'reservable-assets', label: '예약 가능 자원 찾기', icon: 'pi pi-search', path: '/app/reservations/available-assets' },
-  { id: 'schedule-management', label: '일정 관리', icon: 'pi pi-calendar', path: '/app/reservations/monthly' },
-  { id: 'mypage', label: '마이페이지', icon: 'pi pi-user', path: '/app/mypage' },
+  {
+    id: 'reservation-apply',
+    label: '예약 신청하기',
+    icon: 'pi pi-calendar-plus',
+    path: '/app/reservations/me',
+  },
+  {
+    id: 'reservation-list',
+    label: '내 예약 조회하기',
+    icon: 'pi pi-list',
+    path: '/app/reservations/me',
+  },
+  {
+    id: 'reservable-assets',
+    label: '예약 가능 자원 찾기',
+    icon: 'pi pi-search',
+    path: '/app/reservations/available-assets',
+  },
+  {
+    id: 'schedule-management',
+    label: '일정 관리',
+    icon: 'pi pi-calendar',
+    path: '/app/reservations/monthly',
+  },
+  { id: 'mypage', label: '마이페이지', icon: 'pi pi-user', path: '/app/users/me' },
   { id: 'faq', label: '자주 묻는 질문', icon: 'pi pi-question-circle' },
 ]
 
@@ -57,7 +77,7 @@ const enableWelcomeDialog = () => {
 // 목차 클릭 시 해당 섹션으로 스크롤
 const scrollToSection = (sectionId) => {
   // Accordion 열기 (단일 탭만 활성화)
-  const index = tocItems.findIndex(item => item.id === sectionId)
+  const index = tocItems.findIndex((item) => item.id === sectionId)
   if (index !== -1) {
     activeIndex.value = index
     // DOM 업데이트 후 스크롤
@@ -80,7 +100,7 @@ const navigateToPath = (path) => {
 // 가이드 방문 플래그 저장
 onMounted(() => {
   localStorage.setItem('hasVisitedGuide', 'true')
-  
+
   // 안내 팝업 표시 여부 확인
   if (shouldShowWelcome()) {
     showWelcomeDialog.value = true
@@ -117,7 +137,7 @@ onMounted(() => {
           <span>QueueIn 사용법 가이드 안내</span>
         </div>
       </template>
-      
+
       <div class="dialog-body-content">
         <p>QueueIn 시스템 사용법을 안내하는 가이드입니다.</p>
         <p>좌측 목차를 클릭하면 해당 섹션으로 이동하거나, 관련 페이지로 바로 이동할 수 있습니다.</p>
@@ -135,15 +155,8 @@ onMounted(() => {
 
       <template #footer>
         <div class="dialog-footer-content">
-          <Button
-            label="오늘 하루 안 보기"
-            outlined
-            @click="dismissWelcome"
-          />
-          <Button
-            label="확인"
-            @click="dismissWelcome"
-          />
+          <Button label="오늘 하루 안 보기" outlined @click="dismissWelcome" />
+          <Button label="확인" @click="dismissWelcome" />
         </div>
       </template>
     </Dialog>
@@ -207,26 +220,30 @@ onMounted(() => {
                       @click="navigateToPath('/app/reservations/me')"
                     />
                   </div>
-                  
+
                   <h3>1. 예약 신청 페이지 접근</h3>
-                  <p>좌측 사이드바에서 <strong>"예약 관리"</strong> 메뉴를 클릭하거나, 대시보드의 <strong>"예약 신청"</strong> 버튼을 클릭합니다.</p>
-                  
+                  <p>
+                    좌측 사이드바에서 <strong>"예약 관리"</strong> 메뉴를 클릭하거나, 대시보드의
+                    <strong>"예약 신청"</strong> 버튼을 클릭합니다.
+                  </p>
+
                   <h3>2. 자원 선택</h3>
                   <p>예약하고 싶은 자원을 검색하거나 목록에서 선택합니다.</p>
-                  
+
                   <h3>3. 예약 정보 입력</h3>
                   <ul>
                     <li><strong>날짜</strong>: 예약하고 싶은 날짜를 선택합니다.</li>
                     <li><strong>시간</strong>: 시작 시간과 종료 시간을 선택합니다.</li>
                     <li><strong>사용 목적</strong>: 예약 목적을 입력합니다 (선택사항).</li>
                   </ul>
-                  
+
                   <h3>4. 예약 신청</h3>
                   <p><strong>"예약 신청"</strong> 버튼을 클릭하면 관리자 승인을 기다리게 됩니다.</p>
-                  
+
                   <div class="tip-box">
                     <i class="pi pi-info-circle"></i>
-                    <strong>팁:</strong> 즉시 승인이 필요한 경우, 관리자에게 직접 연락하거나 즉시 승인 예약 기능을 사용하세요.
+                    <strong>팁:</strong> 즉시 승인이 필요한 경우, 관리자에게 직접 연락하거나 즉시
+                    승인 예약 기능을 사용하세요.
                   </div>
                 </div>
               </AccordionTab>
@@ -249,10 +266,13 @@ onMounted(() => {
                       @click="navigateToPath('/app/reservations/me')"
                     />
                   </div>
-                  
+
                   <h3>1. 예약 목록 확인</h3>
-                  <p>좌측 사이드바의 <strong>"예약 관리"</strong> 메뉴를 클릭하면 내 예약 목록을 확인할 수 있습니다.</p>
-                  
+                  <p>
+                    좌측 사이드바의 <strong>"예약 관리"</strong> 메뉴를 클릭하면 내 예약 목록을
+                    확인할 수 있습니다.
+                  </p>
+
                   <h3>2. 예약 상태 확인</h3>
                   <ul>
                     <li><strong>대기중 (PENDING)</strong>: 관리자 승인을 기다리는 상태</li>
@@ -262,7 +282,7 @@ onMounted(() => {
                     <li><strong>완료 (COMPLETED)</strong>: 예약 시간이 종료된 상태</li>
                     <li><strong>취소됨 (CANCELED)</strong>: 예약이 취소된 상태</li>
                   </ul>
-                  
+
                   <h3>3. 예약 상세 정보</h3>
                   <p>예약 목록에서 예약 항목을 클릭하면 상세 정보를 확인할 수 있습니다.</p>
                 </div>
@@ -286,17 +306,20 @@ onMounted(() => {
                       @click="navigateToPath('/app/reservations/available-assets')"
                     />
                   </div>
-                  
+
                   <h3>1. 예약 가능 자원 페이지 접근</h3>
-                  <p>대시보드의 <strong>"예약 가능 자원"</strong> 버튼을 클릭하거나, 좌측 사이드바에서 해당 메뉴를 선택합니다.</p>
-                  
+                  <p>
+                    대시보드의 <strong>"예약 가능 자원"</strong> 버튼을 클릭하거나, 좌측
+                    사이드바에서 해당 메뉴를 선택합니다.
+                  </p>
+
                   <h3>2. 자원 검색</h3>
                   <ul>
                     <li><strong>날짜 필터</strong>: 특정 날짜의 예약 가능한 자원만 조회합니다.</li>
                     <li><strong>자원명 검색</strong>: 자원 이름으로 검색합니다.</li>
                     <li><strong>카테고리 필터</strong>: 자원 카테고리로 필터링합니다.</li>
                   </ul>
-                  
+
                   <h3>3. 예약 가능 시간 확인</h3>
                   <p>각 자원의 예약 가능한 시간대를 확인하고, 바로 예약 신청할 수 있습니다.</p>
                 </div>
@@ -320,22 +343,29 @@ onMounted(() => {
                       @click="navigateToPath('/app/reservations/monthly')"
                     />
                   </div>
-                  
+
                   <h3>1. 월별 예약 조회</h3>
-                  <p>대시보드의 <strong>"일정 관리"</strong> 버튼을 클릭하거나, 좌측 사이드바의 <strong>"일정 관리"</strong> 메뉴를 선택합니다.</p>
-                  
+                  <p>
+                    대시보드의 <strong>"일정 관리"</strong> 버튼을 클릭하거나, 좌측 사이드바의
+                    <strong>"일정 관리"</strong> 메뉴를 선택합니다.
+                  </p>
+
                   <h3>2. 월별/주별 보기</h3>
                   <ul>
                     <li><strong>월별 보기</strong>: 한 달 단위로 예약 일정을 확인합니다.</li>
                     <li><strong>주별 보기</strong>: 한 주 단위로 예약 일정을 확인합니다.</li>
                   </ul>
-                  
+
                   <h3>3. 일정 확인</h3>
-                  <p>캘린더 형식으로 예약 일정을 한눈에 확인할 수 있습니다. 각 날짜를 클릭하면 해당 날짜의 예약 목록을 확인할 수 있습니다.</p>
-                  
+                  <p>
+                    캘린더 형식으로 예약 일정을 한눈에 확인할 수 있습니다. 각 날짜를 클릭하면 해당
+                    날짜의 예약 목록을 확인할 수 있습니다.
+                  </p>
+
                   <div class="tip-box">
                     <i class="pi pi-info-circle"></i>
-                    <strong>팁:</strong> 캘린더의 예약 이벤트를 클릭하면 예약 상세 정보를 확인할 수 있습니다.
+                    <strong>팁:</strong> 캘린더의 예약 이벤트를 클릭하면 예약 상세 정보를 확인할 수
+                    있습니다.
                   </div>
                 </div>
               </AccordionTab>
@@ -355,13 +385,16 @@ onMounted(() => {
                       icon="pi pi-arrow-right"
                       outlined
                       size="small"
-                      @click="navigateToPath('/app/mypage')"
+                      @click="navigateToPath('/app/users/me')"
                     />
                   </div>
-                  
+
                   <h3>1. 마이페이지 접근</h3>
-                  <p>우측 상단의 프로필 아이콘을 클릭하거나, <strong>"마이페이지"</strong> 메뉴를 선택합니다.</p>
-                  
+                  <p>
+                    우측 상단의 프로필 아이콘을 클릭하거나, <strong>"마이페이지"</strong> 메뉴를
+                    선택합니다.
+                  </p>
+
                   <h3>2. 내 정보 수정</h3>
                   <ul>
                     <li><strong>이름</strong>: 사용자 이름을 수정할 수 있습니다.</li>
@@ -369,13 +402,17 @@ onMounted(() => {
                     <li><strong>생년월일</strong>: 생년월일을 수정할 수 있습니다.</li>
                     <li><strong>이메일</strong>: 이메일은 수정할 수 없습니다 (관리자에게 문의).</li>
                   </ul>
-                  
+
                   <h3>3. 비밀번호 변경</h3>
-                  <p>마이페이지에서 <strong>"비밀번호 변경"</strong> 섹션을 통해 비밀번호를 변경할 수 있습니다.</p>
-                  
+                  <p>
+                    마이페이지에서 <strong>"비밀번호 변경"</strong> 섹션을 통해 비밀번호를 변경할 수
+                    있습니다.
+                  </p>
+
                   <div class="warning-box">
                     <i class="pi pi-exclamation-triangle"></i>
-                    <strong>주의:</strong> 비밀번호는 안전하게 관리하세요. 정기적으로 변경하는 것을 권장합니다.
+                    <strong>주의:</strong> 비밀번호는 안전하게 관리하세요. 정기적으로 변경하는 것을
+                    권장합니다.
                   </div>
                 </div>
               </AccordionTab>
@@ -390,17 +427,26 @@ onMounted(() => {
                 </template>
                 <div class="tab-content">
                   <h3>Q1. 예약이 승인되지 않았어요.</h3>
-                  <p>A: 예약은 관리자의 승인이 필요합니다. 승인까지 시간이 걸릴 수 있으니 잠시 기다려주세요. 급한 경우 관리자에게 직접 연락하세요.</p>
-                  
+                  <p>
+                    A: 예약은 관리자의 승인이 필요합니다. 승인까지 시간이 걸릴 수 있으니 잠시
+                    기다려주세요. 급한 경우 관리자에게 직접 연락하세요.
+                  </p>
+
                   <h3>Q2. 예약을 취소하고 싶어요.</h3>
-                  <p>A: 예약 목록에서 취소하고 싶은 예약을 선택하고 <strong>"취소"</strong> 버튼을 클릭하세요. 단, 이미 시작된 예약은 취소할 수 없습니다.</p>
-                  
+                  <p>
+                    A: 예약 목록에서 취소하고 싶은 예약을 선택하고 <strong>"취소"</strong> 버튼을
+                    클릭하세요. 단, 이미 시작된 예약은 취소할 수 없습니다.
+                  </p>
+
                   <h3>Q3. 예약 시간을 변경하고 싶어요.</h3>
                   <p>A: 기존 예약을 취소하고 새로운 시간으로 다시 예약 신청하세요.</p>
-                  
+
                   <h3>Q4. 자원 사용을 시작/종료하려면 어떻게 하나요?</h3>
-                  <p>A: 승인된 예약의 경우, 예약 시간이 되면 <strong>"사용 시작"</strong> 버튼이 활성화됩니다. 사용이 끝나면 <strong>"사용 종료"</strong> 버튼을 클릭하세요.</p>
-                  
+                  <p>
+                    A: 승인된 예약의 경우, 예약 시간이 되면 <strong>"사용 시작"</strong> 버튼이
+                    활성화됩니다. 사용이 끝나면 <strong>"사용 종료"</strong> 버튼을 클릭하세요.
+                  </p>
+
                   <h3>Q5. 비밀번호를 잊어버렸어요.</h3>
                   <p>A: 관리자에게 문의하여 비밀번호를 재설정하세요.</p>
                 </div>

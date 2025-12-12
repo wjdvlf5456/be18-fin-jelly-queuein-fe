@@ -59,9 +59,9 @@ const total = ref(0)
 // 🔹 UserReservation 방식: handleFilterChange 정의
 const handleFilterChange = (filters) => {
   selectedFilters.value = {
-  ...selectedFilters.value,
-  ...filters,
-  page: 0   // 필터 변경 시에만 초기화
+    ...selectedFilters.value,
+    ...filters,
+    page: 0, // 필터 변경 시에만 초기화
   }
   fetchReservableAssets()
 }
@@ -113,10 +113,19 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.header-row h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
 }
 
 .tabs-full-row {
-  margin-bottom: 15px;
+  margin-bottom: 24px;
 }
 </style>
