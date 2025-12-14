@@ -2,17 +2,14 @@
   <div>
     <LoadingSpinner :visible="isLoading" message="예약 정보를 불러오는 중입니다." />
 
-    <!-- 예약 탭 -->
-    <ReservationTabs />
-
     <!-- 헤더 -->
-    <div class="header-row">
-      <h2>예약 현황</h2>
-      <el-button type="primary" @click="navigateToReservableAssets">
-        <el-icon><Plus /></el-icon>
-        예약 신청
-      </el-button>
-    </div>
+    <h2 class="page-title">예약 현황</h2>
+
+    <!-- 예약 신청 버튼 -->
+    <button class="target-btn" @click="navigateToReservableAssets">
+      <el-icon><Plus /></el-icon>
+      예약 신청
+    </button>
 
     <!-- 날짜 필터 -->
     <ReservationFilters @change="handleFilterChange" />
@@ -100,7 +97,6 @@ import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationDetailModal from '@/components/reservation/ReservationDetailModal.vue'
 import StatusTag from '@/components/reservation/ReservationStatus.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import { reservationApi } from '@/api/reservationApi'
 import { Plus } from '@element-plus/icons-vue'
 
@@ -519,30 +515,31 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.header-row h2 {
-  font-size: 24px;
+/* 페이지 타이틀 - Accounting과 동일한 스타일 */
+.page-title {
+  font-size: 22px;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+  margin-bottom: 20px;
 }
 
-.header-row .el-button {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 20px;
-  height: auto;
+/* 버튼 - Accounting PerformanceView와 유사한 스타일 */
+.target-btn {
+  position: absolute;
+  right: 40px;
+  top: 130px;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.target-btn:hover {
+  background: #f9fafb;
 }
 
 .pagination {

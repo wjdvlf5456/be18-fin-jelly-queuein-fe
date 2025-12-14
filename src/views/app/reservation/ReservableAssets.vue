@@ -2,10 +2,6 @@
   <div class="reservable-assets-wrapper">
     <LoadingSpinner :visible="isLoading" message="예약 가능 자원 목록을 불러오는 중입니다." />
 
-    <div class="tabs-full-row">
-      <ReservationTabs />
-    </div>
-
     <div class="header-row">
       <h2>예약 가능 자원 조회</h2>
     </div>
@@ -29,7 +25,6 @@
 </template>
 
 <script setup>
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationTable from '@/components/reservation/ReservableAssetsTable.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -164,9 +159,5 @@ onMounted(() => {
   font-weight: 700;
   color: #1f2937;
   margin: 0;
-}
-
-.tabs-full-row {
-  margin-bottom: 0;
 }
 </style>

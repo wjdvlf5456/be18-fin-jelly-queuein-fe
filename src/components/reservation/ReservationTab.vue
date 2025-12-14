@@ -1,20 +1,42 @@
 <template>
   <div class="tab-full-wrapper">
     <el-tabs v-model="active" class="reservation-tabs" @tab-click="onTabClick">
-      <el-tab-pane label="예약 현황" name="status" />
-      <el-tab-pane label="예약 가능 자원 목록" name="available" />
-      <el-tab-pane label="예약 관리" name="applied" />
+      <el-tab-pane
+        v-for="tab in availableTabs"
+        :key="tab.name"
+        :label="tab.label"
+        :name="tab.name"
+      />
     </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { hasRole } from '@/utils/role'
 
 const router = useRouter()
 const route = useRoute()
+
+// MANAGER 이상 (예약 관리용)
+const isAdminOrManager = computed(() => hasRole('MANAGER'))
+
+// 역할에 따라 표시할 탭 목록 결정
+const availableTabs = computed(() => {
+  const tabs = [
+    { label: '예약 현황', name: 'status' },
+    { label: '예약 가능 자원 목록', name: 'available' },
+  ]
+
+  // MANAGER 이상만 "예약 관리" 탭 표시
+  if (isAdminOrManager.value) {
+    tabs.push({ label: '예약 관리', name: 'applied' })
+  }
+
+  return tabs
+})
 
 // 활성 탭 설정
 const active = ref(getTabNameByRoute(route.path))
@@ -22,7 +44,10 @@ const active = ref(getTabNameByRoute(route.path))
 function getTabNameByRoute(path) {
   if (path.includes('/app/reservations/me')) return 'status'
   if (path.includes('/app/reservations/available-assets')) return 'available'
-  if (path.includes('/admin/reservations/applied')) return 'applied'
+  // MANAGER 이상만 'applied' 탭 접근 가능
+  if (path.includes('/admin/reservations/applied') && hasRole('MANAGER')) {
+    return 'applied'
+  }
   return 'status'
 }
 

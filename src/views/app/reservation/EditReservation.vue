@@ -4,7 +4,6 @@
     <div class="header-row">
       <h2>예약하기</h2>
     </div>
-    <ReservationTabs />
 
     <!-- 자원 예약 정보 -->
     <h2>자원 예약</h2>
@@ -59,7 +58,6 @@ import TimeBar from '@/components/reservation/TimeBar.vue'
 import BookingHeader from '@/components/reservation/BookingHeader.vue'
 import ParticipantModal from '@/components/reservation/ParticipantModal.vue'
 import ApplyButton from '@/components/reservation/ApplyButton.vue'
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import { reservationApi } from '@/api/reservationApi'
 
 const router = useRouter()
