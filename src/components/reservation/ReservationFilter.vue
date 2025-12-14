@@ -111,7 +111,10 @@ function emitChange() {
 // 건물(0계층) 변경 시 위치 초기화 + emit
 function onBuildingChange(val) {
   filters.value.layerZero = val
-  filters.value.layerOne = '' // 위치 초기화
+  // 0계층이 "전체"로 변경되면 1계층 초기화
+  if (!val || val === '') {
+    filters.value.layerOne = '' // 위치 초기화
+  }
   emitChange()
 }
 
@@ -159,21 +162,21 @@ watch(
   padding-right: 12px !important;
 }
 
-/* 🔥 반응형: 화면이 좁아지면 3등분 */
+/* 반응형: 화면이 좁아지면 3등분 */
 @media (max-width: 1200px) {
   .filter-row > .el-col {
     flex: 1 1 calc(33.33% - 12px); /* 한 줄에 3개 */
   }
 }
 
-/* 🔥 더 좁아지면 2등분 */
+/* 더 좁아지면 2등분 */
 @media (max-width: 900px) {
   .filter-row > .el-col {
     flex: 1 1 calc(50% - 12px); /* 한 줄에 2개 */
   }
 }
 
-/* 🔥 모바일: 1개씩 */
+/* 모바일: 1개씩 */
 @media (max-width: 600px) {
   .filter-row > .el-col {
     flex: 1 1 100%; /* 한 줄에 하나 */

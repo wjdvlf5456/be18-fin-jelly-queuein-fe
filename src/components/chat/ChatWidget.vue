@@ -17,12 +17,7 @@
         </div>
 
         <div class="chat-body" ref="scrollRef">
-          <div
-            v-for="(msg, idx) in messages"
-            :key="idx"
-            class="chat-bubble"
-            :class="msg.role"
-          >
+          <div v-for="(msg, idx) in messages" :key="idx" class="chat-bubble" :class="msg.role">
             <p class="text">{{ msg.content }}</p>
           </div>
           <div v-if="loading" class="chat-bubble bot loading">
@@ -54,9 +49,7 @@ import { chatbotApi } from '@/api/chatbotApi'
 const open = ref(false)
 const input = ref('')
 const loading = ref(false)
-const messages = ref([
-  { role: 'bot', content: '안녕하세요! 자원 예약/상태/위치 등을 물어보세요.' },
-])
+const messages = ref([{ role: 'bot', content: '안녕하세요! 자원 예약/상태/위치 등을 물어보세요.' }])
 
 const scrollRef = ref(null)
 
@@ -99,7 +92,7 @@ const send = async () => {
 <style scoped>
 .chat-widget {
   position: fixed;
-  right: 24px;
+  left: 24px;
   bottom: 24px;
   z-index: 2000;
 }
@@ -115,7 +108,9 @@ const send = async () => {
   justify-content: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .chat-toggle:hover {
@@ -126,7 +121,7 @@ const send = async () => {
 .chat-panel {
   position: absolute;
   bottom: 60px;
-  right: 0;
+  left: 0;
   width: 340px;
   max-height: 520px;
   background: #fff;
@@ -252,7 +247,9 @@ const send = async () => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -260,4 +257,3 @@ const send = async () => {
   transform: translateY(8px);
 }
 </style>
-

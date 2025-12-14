@@ -7,6 +7,7 @@ import { assetApi } from '@/api/assetApi.js'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 // 3D 효과를 위한 ref
 const statCards = ref([])
@@ -185,6 +186,8 @@ watch(
 
 <template>
   <div class="admin-dashboard">
+    <LoadingSpinner :visible="loading" message="대시보드 데이터를 불러오는 중입니다." />
+
     <!-- 환영 메시지 -->
     <div class="welcome-section">
       <h1 class="welcome-title">
@@ -198,28 +201,28 @@ watch(
 
     <!-- 통계 카드 -->
     <div class="stats-grid">
-      <Card class="stat-card users">
+      <Card class="stat-card users" @click="router.push('/admin/users')">
         <template #content>
           <div class="stat-content">
             <div class="stat-icon">
               <i class="pi pi-users"></i>
             </div>
-            <div class="stat-info" @click="router.push('/admin/users')">
+            <div class="stat-info">
               <div class="stat-value">{{ stats.totalUsers }}</div>
               <div class="stat-label">전체 사용자</div>
             </div>
-            <Button icon="pi pi-arrow-right" text rounded @click="router.push('/admin/users')" />
+            <Button icon="pi pi-arrow-right" text rounded @click.stop="router.push('/admin/users')" />
           </div>
         </template>
       </Card>
 
-      <Card class="stat-card reservations">
+      <Card class="stat-card reservations" @click="router.push('/admin/reservations/applied')">
         <template #content>
           <div class="stat-content">
             <div class="stat-icon">
               <i class="pi pi-calendar"></i>
             </div>
-            <div class="stat-info" @click="router.push('/admin/reservations/applied')">
+            <div class="stat-info">
               <div class="stat-value">{{ stats.totalReservations }}</div>
               <div class="stat-label">전체 예약</div>
             </div>
@@ -227,19 +230,19 @@ watch(
               icon="pi pi-arrow-right"
               text
               rounded
-              @click="router.push('/admin/reservations/applied')"
+              @click.stop="router.push('/admin/reservations/applied')"
             />
           </div>
         </template>
       </Card>
 
-      <Card class="stat-card pending">
+      <Card class="stat-card pending" @click="router.push('/admin/reservations/applied')">
         <template #content>
           <div class="stat-content">
             <div class="stat-icon">
               <i class="pi pi-clock"></i>
             </div>
-            <div class="stat-info" @click="router.push('/admin/reservations/applied')">
+            <div class="stat-info">
               <div class="stat-value">{{ stats.pendingReservations }}</div>
               <div class="stat-label">대기중인 예약</div>
             </div>
@@ -247,23 +250,23 @@ watch(
               icon="pi pi-arrow-right"
               text
               rounded
-              @click="router.push('/admin/reservations/applied')"
+              @click.stop="router.push('/admin/reservations/applied')"
             />
           </div>
         </template>
       </Card>
 
-      <Card class="stat-card assets">
+      <Card class="stat-card assets" @click="router.push('/admin/assets')">
         <template #content>
           <div class="stat-content">
             <div class="stat-icon">
               <i class="pi pi-box"></i>
             </div>
-            <div class="stat-info" @click="router.push('/admin/assets')">
+            <div class="stat-info">
               <div class="stat-value">{{ stats.totalAssets }}</div>
               <div class="stat-label">전체 자원</div>
             </div>
-            <Button icon="pi pi-arrow-right" text rounded @click="router.push('/admin/assets')" />
+            <Button icon="pi pi-arrow-right" text rounded @click.stop="router.push('/admin/assets')" />
           </div>
         </template>
       </Card>
@@ -271,7 +274,7 @@ watch(
 
     <!-- 빠른 액션 -->
     <div class="actions-grid">
-      <Card class="action-card">
+      <Card class="action-card" @click="router.push('/admin/users')">
         <template #title>
           <div class="card-title">
             <i class="pi pi-users"></i>
@@ -280,48 +283,48 @@ watch(
         </template>
         <template #content>
           <div class="action-content">
-            <p>사용자 목록 조회, 생성, 수정, 삭제</p>
+            <p>사용자 계정 조회, 생성, 수정, 삭제</p>
             <Button
               label="사용자 관리"
               icon="pi pi-arrow-right"
               outlined
-              @click="router.push('/admin/users')"
+              @click.stop="router.push('/admin/users')"
             />
           </div>
         </template>
       </Card>
 
-      <Card class="action-card">
+      <Card class="action-card" @click="router.push('/admin/roles')">
         <template #title>
           <div class="card-title">
             <i class="pi pi-shield"></i>
-            역할 & 권한
+            역할 & 권한 관리
           </div>
         </template>
         <template #content>
           <div class="action-content">
-            <p>역할 관리 및 권한 매핑</p>
+            <p>역할 생성/수정 및 권한 매핑 관리</p>
             <div class="action-buttons">
               <Button
                 label="역할 관리"
                 icon="pi pi-arrow-right"
                 outlined
                 severity="info"
-                @click="router.push('/admin/roles')"
+                @click.stop="router.push('/admin/roles')"
               />
               <Button
                 label="권한 관리"
                 icon="pi pi-arrow-right"
                 outlined
                 severity="help"
-                @click="router.push('/admin/permissions/list')"
+                @click.stop="router.push('/admin/permissions/list')"
               />
             </div>
           </div>
         </template>
       </Card>
 
-      <Card class="action-card">
+      <Card class="action-card" @click="router.push('/admin/assets')">
         <template #title>
           <div class="card-title">
             <i class="pi pi-box"></i>
@@ -330,34 +333,34 @@ watch(
         </template>
         <template #content>
           <div class="action-content">
-            <p>자원 목록 조회, 생성, 수정, 삭제</p>
+            <p>자원, 카테고리, 계층 구조 관리</p>
             <Button
               label="자원 관리"
               icon="pi pi-arrow-right"
               outlined
               severity="success"
-              @click="router.push('/admin/assets')"
+              @click.stop="router.push('/admin/assets')"
             />
           </div>
         </template>
       </Card>
 
-      <Card class="action-card">
+      <Card class="action-card" @click="router.push('/admin/accounting/usage-history')">
         <template #title>
           <div class="card-title">
             <i class="pi pi-chart-line"></i>
-            정산 관리
+            정산 / 사용 관리
           </div>
         </template>
         <template #content>
           <div class="action-content">
-            <p>사용 기록, 추이, 성과 분석</p>
+            <p>사용 기록 조회, 정산 분석, 통계</p>
             <Button
               label="정산 관리"
               icon="pi pi-arrow-right"
               outlined
               severity="warning"
-              @click="router.push('/admin/accounting/usage-history')"
+              @click.stop="router.push('/admin/accounting/usage-history')"
             />
           </div>
         </template>
@@ -365,7 +368,7 @@ watch(
     </div>
 
     <!-- 사용법 가이드 -->
-    <Card class="guide-card">
+    <Card class="guide-card" @click="router.push('/admin/guide')">
       <template #title>
         <div class="card-title">
           <i class="pi pi-book"></i>
@@ -379,7 +382,7 @@ watch(
             label="사용법 위키 보기"
             icon="pi pi-external-link"
             outlined
-            @click="router.push('/admin/guide')"
+            @click.stop="router.push('/admin/guide')"
           />
         </div>
       </template>
@@ -389,14 +392,15 @@ watch(
 
 <style scoped>
 .admin-dashboard {
-  padding: 24px;
+  padding: 32px;
   max-width: 1400px;
   margin: 0 auto;
+  min-height: calc(100vh - 70px);
 }
 
 /* 환영 섹션 */
 .welcome-section {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .welcome-title {
@@ -425,9 +429,9 @@ watch(
 /* 통계 카드 그리드 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
 .stat-card {
@@ -449,7 +453,8 @@ watch(
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  padding: 4px;
 }
 
 .stat-icon {
@@ -482,7 +487,6 @@ watch(
 
 .stat-info {
   flex: 1;
-  cursor: pointer;
 }
 
 .stat-value {
@@ -501,9 +505,9 @@ watch(
 /* 액션 그리드 */
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
 .action-card {
@@ -512,6 +516,7 @@ watch(
   transition:
     transform 0.2s,
     box-shadow 0.2s;
+  cursor: pointer;
 }
 
 .action-card:hover {
@@ -535,7 +540,8 @@ watch(
 .action-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  padding: 4px;
 }
 
 .action-content p {
@@ -557,6 +563,15 @@ watch(
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.guide-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .guide-card :deep(.p-card-title) {

@@ -26,9 +26,9 @@ const today = computed(() => {
 // 통계
 const stats = computed(() => {
   const total = todayReservations.value.length
-  const approved = todayReservations.value.filter((r) => r.status === 'APPROVED').length
-  const pending = todayReservations.value.filter((r) => r.status === 'PENDING').length
-  const using = todayReservations.value.filter((r) => r.status === 'USING').length
+  const approved = todayReservations.value.filter((r) => r.reservationStatus === 'APPROVED').length
+  const pending = todayReservations.value.filter((r) => r.reservationStatus === 'PENDING').length
+  const using = todayReservations.value.filter((r) => r.reservationStatus === 'USING').length
 
   return { total, approved, pending, using }
 })
@@ -80,11 +80,16 @@ function getStatusLabel(status) {
   return map[status] || status
 }
 
-// 날짜 포맷
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+// 시간 포맷
+function formatTime(instant) {
+  if (!instant) return '-'
+  const date = new Date(instant)
+  if (isNaN(date.getTime())) return '-'
+  return date.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 }
 
 // Transition 완료 이벤트 리스너
@@ -212,12 +217,6 @@ watch(
       <template #content>
         <div class="quick-actions">
           <Button
-            label="예약 신청"
-            icon="pi pi-plus-circle"
-            severity="success"
-            @click="router.push('/app/reservations/apply')"
-          />
-          <Button
             label="예약 조회"
             icon="pi pi-list"
             severity="info"
@@ -256,21 +255,21 @@ watch(
           :emptyMessage="'오늘 예약된 항목이 없습니다.'"
         >
           <Column field="assetName" header="자원명" />
-          <Column field="startTime" header="시작 시간">
+          <Column field="startAt" header="시작 시간">
             <template #body="{ data }">
-              {{ formatDate(data.startTime) }}
+              {{ formatTime(data.startAt) }}
             </template>
           </Column>
-          <Column field="endTime" header="종료 시간">
+          <Column field="endAt" header="종료 시간">
             <template #body="{ data }">
-              {{ formatDate(data.endTime) }}
+              {{ formatTime(data.endAt) }}
             </template>
           </Column>
-          <Column field="status" header="상태">
+          <Column field="reservationStatus" header="상태">
             <template #body="{ data }">
               <Tag
-                :value="getStatusLabel(data.status)"
-                :severity="getStatusSeverity(data.status)"
+                :value="getStatusLabel(data.reservationStatus)"
+                :severity="getStatusSeverity(data.reservationStatus)"
               />
             </template>
           </Column>

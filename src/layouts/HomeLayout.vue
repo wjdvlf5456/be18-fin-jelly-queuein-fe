@@ -6,12 +6,11 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import AccountingTabs from '@/components/accounting/AccountingTabMenu.vue'
 import ChatWidget from '@/components/chat/ChatWidget.vue'
 
 /* ---------------------------
-   🔥 경로 기반 탭 자동 표시
+   경로 기반 탭 자동 표시
 --------------------------- */
 const route = useRoute()
 
@@ -26,7 +25,7 @@ const currentTabType = computed(() => {
 })
 
 /* ---------------------------
-   🔥 사이드바 동작 (고정 + hover)
+   사이드바 동작 (고정 + hover)
 --------------------------- */
 const isFixedOpen = ref(false)
 const isHoverOpen = ref(false)
@@ -46,7 +45,7 @@ function closeHover() {
 }
 
 /* ---------------------------
-   🔥 페이지 전환 효과
+   페이지 전환 효과
 --------------------------- */
 const previousPath = ref(null)
 const transitionName = ref('fade')
@@ -117,10 +116,9 @@ function onTransitionEnter() {
       @close-sidebar="isFixedOpen = false"
     />
 
-    <!-- 🔥 헤더 바로 아래 탭 메뉴 -->
-    <div v-if="currentTabType" class="tab-wrapper">
-      <ReservationTabs v-if="currentTabType === 'reservation'" />
-      <AccountingTabs v-if="currentTabType === 'accounting'" />
+    <!-- 헤더 바로 아래 탭 메뉴 -->
+    <div v-if="currentTabType === 'accounting'" class="tab-wrapper">
+      <AccountingTabs />
     </div>
 
     <!-- 메인 컨텐츠 -->
@@ -151,7 +149,7 @@ function onTransitionEnter() {
 .tab-wrapper {
   background: white;
 
-  /* 🔥 모든 padding 제거 → 탭이 상단에 딱 붙음 */
+  /* 모든 padding 제거 → 탭이 상단에 딱 붙음 */
   padding: 0;
 
   /* 정산 탭처럼 탭만 표시되도록 */
@@ -170,8 +168,8 @@ function onTransitionEnter() {
   overflow-y: auto;
   overflow-x: hidden; /* 슬라이드 애니메이션을 위한 overflow-x 숨김 */
 
-  /* 화면 내용은 적당히 padding 유지 */
-  padding: 20px;
+  /* 화면 내용은 적당히 padding 유지 - 더 넓은 간격 */
+  padding: 32px;
   background: white;
   box-sizing: border-box;
 

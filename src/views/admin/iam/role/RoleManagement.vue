@@ -1,12 +1,13 @@
 <!-- file: src/views/admin/iam/role/RoleManagement.vue -->
 <script setup>
 import { ref, onMounted, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { roleApi } from '@/api/iam/roleApi.js'
 
 import IamTabs from '@/components/iam/IamTabs.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 // PrimeVue
 import Card from 'primevue/card'
@@ -22,6 +23,8 @@ const loading = ref(false)
 
 // 펼침 여부 roleId → boolean
 const expanded = ref({})
+// 권한 설명 표시 여부 permissionId → boolean
+const hoveredPermission = ref(null)
 
 // 역할 생성/수정 다이얼로그 상태
 const showDialog = ref(false)
@@ -162,6 +165,16 @@ async function deleteRole(role) {
   await roleApi.deleteRole(role.roleId)
   loadRoles()
 }
+
+// --------------------------------------------------
+// 사용자 목록으로 이동 (역할 필터 적용)
+// --------------------------------------------------
+function navigateToUsersWithRole(roleName) {
+  router.push({
+    path: '/admin/users',
+    query: { role: roleName }
+  })
+}
 </script>
 
 <template>
@@ -197,7 +210,7 @@ async function deleteRole(role) {
         </template>
 
         <template #subtitle>
-          <div class="sub-info">
+          <div class="sub-info" @click="navigateToUsersWithRole(role.roleName)" @click.stop>
             <i class="pi pi-users"></i>
             {{ role.userCount }} 명
           </div>
@@ -206,21 +219,37 @@ async function deleteRole(role) {
         <template #content>
           <p class="role-desc">{{ role.roleDescription }}</p>
 
-          <!-- 펼침/접기 버튼 -->
+          <!-- 권한 펼침/접기 -->
           <div class="perm-header" @click="toggleExpand(role.roleId)">
-            <span>Permissions</span>
+            <span>권한 {{ role.permissions?.length || 0 }}개</span>
             <i :class="expanded[role.roleId] ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
           </div>
 
-          <!-- 펼쳐진 경우에만 Permissions 목록 표시 -->
-          <div v-if="expanded[role.roleId]" class="perm-list">
-            <Chip
-              v-for="p in role.permissions"
-              :key="p.permissionId"
-              :label="p.permissionName"
-              class="perm-chip"
-            />
-          </div>
+          <!-- 펼쳐진 경우에만 Permissions 목록 표시 (독립적인 전환) -->
+          <Transition name="perm-expand">
+            <div v-if="expanded[role.roleId]" class="perm-list-wrapper">
+              <div class="perm-list">
+                <div
+                  v-for="p in role.permissions"
+                  :key="p.permissionId"
+                  class="perm-item"
+                  @mouseenter="hoveredPermission = p.permissionId"
+                  @mouseleave="hoveredPermission = null"
+                >
+                  <Chip
+                    :label="p.permissionName"
+                    class="perm-chip"
+                  />
+                  <div
+                    v-if="p.permissionDescription && hoveredPermission === p.permissionId"
+                    class="perm-description"
+                  >
+                    {{ p.permissionDescription }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
         </template>
       </Card>
     </div>
@@ -284,10 +313,16 @@ async function deleteRole(role) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
+  /* 그리드 아이템들이 독립적으로 정렬되도록 */
+  align-items: start;
 }
 
 .role-card {
   padding: 4px 6px;
+  /* 각 카드가 독립적으로 동작하도록 격리 */
+  contain: layout style;
+  /* 카드 높이 변화가 다른 카드에 영향을 주지 않도록 */
+  align-self: start;
 }
 
 .title-box {
@@ -314,6 +349,17 @@ async function deleteRole(role) {
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.sub-info:hover {
+  color: #3b82f6;
+}
+
+.sub-info:hover i {
+  color: #3b82f6;
 }
 
 .role-desc {
@@ -321,14 +367,138 @@ async function deleteRole(role) {
   margin-bottom: 10px;
 }
 
+.perm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #DBEAFE;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 12px;
+}
+
+.perm-header:hover {
+  background: #bfdbfe;
+}
+
+.perm-header span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3B82F6;
+}
+
+.perm-header i {
+  font-size: 14px;
+  color: #3B82F6;
+}
+
+.perm-list-wrapper {
+  overflow: hidden;
+  margin-top: 0;
+}
+
 .perm-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
+  margin-top: 12px;
+}
+
+.perm-item {
+  position: relative;
+  width: 100%;
+}
+
+.perm-description {
+  display: block;
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 8px;
+  font-size: 12px;
+  color: white;
+  z-index: 100;
+  white-space: normal;
+  width: 200px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  line-height: 1.5;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+.perm-description::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #3b82f6;
+}
+
+/* 권한 목록 확장/축소 전환 애니메이션 */
+.perm-expand-enter-active,
+.perm-expand-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.perm-expand-enter-from {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.perm-expand-enter-to {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 0;
+}
+
+.perm-expand-leave-from {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 0;
+}
+
+.perm-expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
 }
 
 .perm-chip {
-  background: #f0f0f0;
+  background: #DBEAFE;
+  color: #3B82F6;
+  border: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+/* PrimeVue Chip 스타일 오버라이드 */
+.perm-chip :deep(.p-chip-text) {
+  color: #3B82F6;
+  font-weight: 500;
 }
 
 .dialog-body {

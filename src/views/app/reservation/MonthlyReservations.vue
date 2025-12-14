@@ -81,6 +81,16 @@ const isChangingView = ref(false) // 뷰 변경 중 플래그
 const modalOpen = ref(false)
 const reservationDetail = ref(null)
 
+// ============================================
+// 중복 호출 방지 메커니즘 (FullCalendar용)
+// ============================================
+// isLoadingEvents: 이벤트 로딩 중인지 확인 (datesSet 중복 호출 방지)
+const isLoadingEvents = ref(false)
+// lastLoadedDateRange: 마지막으로 로드한 날짜 범위 (동일 범위 중복 방지)
+const lastLoadedDateRange = ref(null)
+// isAddingEvents: 이벤트 추가 중 플래그 (addEvent로 인한 datesSet 재트리거 방지)
+const isAddingEvents = ref(false)
+
 // 날짜를 YYYY-MM-DD 형식으로 변환
 const formatDateForApi = (date) => {
   if (!date) return new Date().toISOString().slice(0, 10)
@@ -112,18 +122,20 @@ const calendarOptions = computed(() => ({
   views: {
     timeGridDay: {
       slotMinTime: '00:00:00',
-      slotMaxTime: '24:00:00',
+      slotMaxTime: '25:00:00', // exclusive end time이므로 24:00까지 표시하려면 25:00 필요
       slotDuration: '00:30:00',
-      contentHeight: 'auto',
+      scrollTime: '00:00:00',
+      height: 'auto',
     },
     timeGridWeek: {
       slotMinTime: '00:00:00',
-      slotMaxTime: '24:00:00',
+      slotMaxTime: '25:00:00', // exclusive end time이므로 24:00까지 표시하려면 25:00 필요
       slotDuration: '00:30:00',
-      contentHeight: 'auto',
+      scrollTime: '00:00:00',
+      height: 'auto',
     }
   },
-  contentHeight: 'auto',
+  height: 'auto',
   displayEventTime: false,
   eventOverlap: false,
   slotEventOverlap: false,
@@ -136,25 +148,34 @@ const calendarOptions = computed(() => ({
     minute: '2-digit',
     hour12: false
   },
-  
+
   eventContent: (arg) => {
-    // 로컬 시간으로 변환하여 표시
-    const startTime = arg.event.start ? new Date(arg.event.start).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
-    const endTime = arg.event.end ? new Date(arg.event.end).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
-    const timeText = endTime ? `${startTime} - ${endTime}` : startTime
+    // 주별/일별 뷰일 때만 시간 표시
+    const isTimeView = currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay'
+
+    let timeText = ''
+    if (isTimeView && arg.event.start && arg.event.end) {
+      // UTC 시간을 로컬 시간으로 변환
+      const startDate = new Date(arg.event.start)
+      const endDate = new Date(arg.event.end)
+      const startTime = startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+      const endTime = endDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+      timeText = `${startTime} - ${endTime} `
+    }
+
     const count = arg.event.extendedProps.count ?? 1
     const bgColor = arg.event.backgroundColor || '#fce7f3'
     const textColor = arg.event.textColor || '#9f1239'
     return {
       html: `
         <div class="custom-event-chip" style="background-color: ${bgColor}; color: ${textColor};">
-          <span class="event-title">${timeText} ${arg.event.title}</span>
+          <span class="event-title">${timeText}${arg.event.title}</span>
           ${count > 1 ? `<span class="event-badge">+${count - 1}</span>` : ""}
         </div>
       `
     }
   },
-  
+
   eventClick: (info) => {
     const reservationId = info.event.id
     if (reservationId) {
@@ -162,62 +183,101 @@ const calendarOptions = computed(() => ({
     }
   },
   events: [],
-  
+
   // 날짜 변경 시 이벤트 로드
+  // 주의: FullCalendar는 addEvent() 호출 시 내부적으로 datesSet를 다시 트리거할 수 있음
+  // 이를 방지하기 위해 isAddingEvents 플래그와 날짜 범위 비교를 사용
   datesSet: async (info) => {
     const api = calendarRef.value?.getApi()
     if (!api) return
-    
-    // 뷰 변경 중이면 잠시 대기 후 플래그 해제 (changeView에서 이미 로드함)
+
+    // Guard 1: 뷰 변경 중이면 스킵 (changeView에서 이미 로드함)
     if (isChangingView.value) {
-      // 플래그가 너무 오래 true로 남아있지 않도록 안전장치
       setTimeout(() => {
         isChangingView.value = false
       }, 1000)
       return
     }
-    
-    // 주간/일간 뷰일 때는 주별 API 호출
-    if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
-      const startDate = info.startStr.slice(0, 10)
-      try {
+
+    // Guard 2: 이벤트 추가 중이면 스킵 (addEvent로 인한 재트리거 방지)
+    if (isAddingEvents.value) {
+      console.log('datesSet: 이벤트 추가 중이므로 스킵')
+      return
+    }
+
+    // Guard 3: 이미 로딩 중이면 스킵
+    if (isLoadingEvents.value) {
+      console.log('datesSet: 이미 로딩 중이므로 스킵')
+      return
+    }
+
+    // 현재 날짜 범위 계산
+    const currentDateRange = {
+      start: info.startStr.slice(0, 10),
+      end: info.endStr.slice(0, 10),
+      view: currentView.value
+    }
+
+    // Guard 4: 동일한 날짜 범위를 이미 로드했으면 스킵
+    if (lastLoadedDateRange.value &&
+        lastLoadedDateRange.value.start === currentDateRange.start &&
+        lastLoadedDateRange.value.end === currentDateRange.end &&
+        lastLoadedDateRange.value.view === currentDateRange.view) {
+      console.log('datesSet: 동일한 날짜 범위를 이미 로드했으므로 스킵', currentDateRange)
+      return
+    }
+
+    // 로딩 시작
+    isLoadingEvents.value = true
+    lastLoadedDateRange.value = currentDateRange
+
+    try {
+      // 주간/일간 뷰일 때는 주별 API 호출
+      if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
+        const startDate = info.startStr.slice(0, 10)
         const res = await reservationApi.getWeeklyReservations(startDate)
         const json = res.data.reservations ? res.data : res.data.data?.reservations ? res.data.data : res.data.result?.reservations ? res.data.result : null
-        
+
         if (json && json.reservations) {
           const events = convertReservationsToEvents(json)
           calendarEvents.value = events
-          
+
+          // 이벤트 추가 중 플래그 설정 (addEvent로 인한 datesSet 재트리거 방지)
+          isAddingEvents.value = true
           api.removeAllEvents()
           events.forEach(ev => api.addEvent(ev))
-          
+          // 이벤트 추가 완료 후 플래그 해제
           await nextTick()
+          isAddingEvents.value = false
+
           setTimeout(() => {
             applySlotBackgrounds()
           }, 600)
         } else {
-          // 예약이 없는 경우에도 기존 이벤트 제거
+          isAddingEvents.value = true
           api.removeAllEvents()
+          isAddingEvents.value = false
           calendarEvents.value = []
         }
-      } catch (err) {
-        console.error('주별 예약 조회 실패:', err)
-        // 에러 발생 시에도 기존 이벤트 제거하지 않음 (재시도 가능하도록)
+      } else {
+        // 월별 뷰일 때는 월별 API 호출
+        await loadCalendarEvents()
       }
-    } else {
-      // 월별 뷰일 때는 월별 API 호출
-      await loadCalendarEvents()
+    } catch (err) {
+      console.error('주별 예약 조회 실패:', err)
+    } finally {
+      isLoadingEvents.value = false
     }
   },
-  
+
   // 이벤트가 마운트될 때 타임슬롯 배경색 적용 (주간/일간 뷰일 때만)
   eventDidMount: (arg) => {
     const event = arg.event
     if (!event.start || !event.end) return
-    
+
     const bgColor = event.backgroundColor || '#fce7f3'
     const textColor = event.textColor || '#9f1239'
-    
+
     // fc-event-main 전체에 배경색 적용
     const eventMain = arg.el.querySelector('.fc-event-main')
     if (eventMain) {
@@ -227,11 +287,11 @@ const calendarOptions = computed(() => ({
       eventMain.style.padding = '0'
       eventMain.style.borderRadius = '0'
     }
-    
+
     // fc-event 전체에도 배경색 적용
     arg.el.style.backgroundColor = bgColor
     arg.el.style.borderColor = bgColor
-    
+
     // 주간/일간 뷰일 때 타임슬롯 배경색도 적용
     if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
       setTimeout(() => {
@@ -298,13 +358,13 @@ const convertReservationsToEvents = (data) => {
       // UTC 시간을 Date 객체로 변환 (FullCalendar가 자동으로 로컬 시간으로 표시)
       const start = new Date(r.startAt)
       const end = new Date(r.endAt)
-      
+
       eventRanges.push({
         id: r.reservationId,
         start: start.getTime(),
         end: end.getTime()
       })
-      
+
       events.push({
         id: r.reservationId,
         title: r.assetName,
@@ -327,14 +387,14 @@ const convertReservationsToEvents = (data) => {
   events.forEach(event => {
     const eventStart = event.start.getTime()
     const eventEnd = event.end.getTime()
-    
+
     // 다른 이벤트와 겹치는지 확인
     const overlappingCount = eventRanges.filter(range => {
       if (range.id === event.id) return false
       // 시간 범위가 겹치는지 확인
       return (eventStart < range.end && eventEnd > range.start)
     }).length
-    
+
     // 겹치는 이벤트가 있으면 색상을 변경
     if (overlappingCount > 0) {
       const baseColor = event.backgroundColor
@@ -357,15 +417,15 @@ function darkenColor(color) {
     const r = parseInt(hex.substr(0, 2), 16)
     const g = parseInt(hex.substr(2, 2), 16)
     const b = parseInt(hex.substr(4, 2), 16)
-    
+
     // 20% 어둡게
     const newR = Math.max(0, Math.floor(r * 0.8))
     const newG = Math.max(0, Math.floor(g * 0.8))
     const newB = Math.max(0, Math.floor(b * 0.8))
-    
+
     return `rgb(${newR}, ${newG}, ${newB})`
   }
-  
+
   // rgb 색상인 경우
   if (color.startsWith('rgb')) {
     const matches = color.match(/\d+/g)
@@ -376,7 +436,7 @@ function darkenColor(color) {
       return `rgb(${r}, ${g}, ${b})`
     }
   }
-  
+
   return color
 }
 
@@ -394,47 +454,63 @@ const getYearMonth = (date) => {
 /* ---------------------------
    API 호출하여 FullCalendar 갱신
 ---------------------------- */
+// 월별 뷰용 이벤트 로드 함수
+// 중복 방지: isLoadingEvents 플래그로 중복 호출 방지
 const loadCalendarEvents = async () => {
-  const yearMonth = getYearMonth(selectedDate.value)
-
-  const res = await reservationApi.getMonthlyReservations(yearMonth)
-
-  console.log("RAW AXIOS DATA:", res.data)
-
-  const json =
-    res.data.reservations
-      ? res.data
-      : res.data.data?.reservations
-      ? res.data.data
-      : res.data.result?.reservations
-      ? res.data.result
-      : null
-
-  console.log("PARSED JSON:", json)
-
-  const api = calendarRef.value.getApi()
-
-  if (!json || !json.reservations) {
-    console.warn("❗ reservations 데이터를 찾을 수 없습니다")
-    api.removeAllEvents()
+  // Guard: 이미 로딩 중이면 스킵
+  if (isLoadingEvents.value) {
+    console.log('loadCalendarEvents: 이미 로딩 중이므로 스킵')
     return
   }
 
-  const events = convertReservationsToEvents(json)
-  console.log("EVENTS:", events)
-  
-  // 캘린더 이벤트 저장 (미니 캘린더용)
-  calendarEvents.value = events
+  isLoadingEvents.value = true
 
-  api.removeAllEvents()
-  events.forEach(ev => api.addEvent(ev))
-  
-  // 주간/일간 뷰일 때 타임슬롯 배경색 적용
-  if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
+  try {
+    const yearMonth = getYearMonth(selectedDate.value)
+    const res = await reservationApi.getMonthlyReservations(yearMonth)
+
+    const json =
+      res.data.reservations
+        ? res.data
+        : res.data.data?.reservations
+        ? res.data.data
+        : res.data.result?.reservations
+        ? res.data.result
+        : null
+
+    const api = calendarRef.value.getApi()
+
+    if (!json || !json.reservations) {
+      console.warn("❗ reservations 데이터를 찾을 수 없습니다")
+      isAddingEvents.value = true
+      api.removeAllEvents()
+      isAddingEvents.value = false
+      return
+    }
+
+    const events = convertReservationsToEvents(json)
+
+    // 캘린더 이벤트 저장 (미니 캘린더용)
+    calendarEvents.value = events
+
+    // 이벤트 추가 중 플래그 설정 (addEvent로 인한 datesSet 재트리거 방지)
+    isAddingEvents.value = true
+    api.removeAllEvents()
+    events.forEach(ev => api.addEvent(ev))
     await nextTick()
-    setTimeout(() => {
-      applySlotBackgrounds()
-    }, 600)
+    isAddingEvents.value = false
+
+    // 주간/일간 뷰일 때 타임슬롯 배경색 적용
+    if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
+      await nextTick()
+      setTimeout(() => {
+        applySlotBackgrounds()
+      }, 600)
+    }
+  } catch (err) {
+    console.error('월별 예약 조회 실패:', err)
+  } finally {
+    isLoadingEvents.value = false
   }
 }
 
@@ -444,75 +520,75 @@ function applySlotBackgrounds() {
   if (!calendarEl) {
     return
   }
-  
+
   // 모든 타임슬롯 배경색 초기화
   const allSlots = calendarEl.querySelectorAll('.fc-timegrid-slot')
   allSlots.forEach(slot => {
     slot.style.backgroundColor = ''
     slot.classList.remove('has-event-slot')
   })
-  
+
   // 모든 이벤트 엘리먼트 찾기
   const allEvents = calendarEl.querySelectorAll('.fc-timegrid-event')
-  
+
   if (allEvents.length === 0) {
     return
   }
-  
+
   allEvents.forEach((eventEl) => {
     // 이벤트의 배경색 가져오기 (인라인 스타일에서)
     const eventChip = eventEl.querySelector('.custom-event-chip')
     if (!eventChip) {
       return
     }
-    
+
     // 인라인 스타일에서 배경색 가져오기
     const bgColorStyle = eventChip.getAttribute('style')
     if (!bgColorStyle || !bgColorStyle.includes('background-color')) {
       return
     }
-    
+
     const bgColorMatch = bgColorStyle.match(/background-color:\s*([^;]+)/)
     if (!bgColorMatch) {
       return
     }
-    
+
     const bgColor = bgColorMatch[1].trim()
     const rgba = hexToRgbaFromString(bgColor, 0.3)
-    
+
     // 이벤트가 속한 타임슬롯 찾기
     const timeGridCol = eventEl.closest('.fc-timegrid-col')
     if (!timeGridCol) {
       return
     }
-    
+
     const colFrame = timeGridCol.querySelector('.fc-timegrid-col-frame')
     if (!colFrame) {
       return
     }
-    
+
     // 이벤트의 실제 위치 계산
     const eventRect = eventEl.getBoundingClientRect()
     const colRect = colFrame.getBoundingClientRect()
     const eventTop = eventRect.top - colRect.top
     const eventBottom = eventRect.bottom - colRect.top
-    
+
     // 실제 타임슬롯 높이 계산 (첫 번째 슬롯의 높이 사용)
     const slots = colFrame.querySelectorAll('.fc-timegrid-slot')
     if (slots.length === 0) {
       return
     }
-    
+
     const firstSlot = slots[0]
     const slotHeight = firstSlot.getBoundingClientRect().height || 60
-    
+
     // 시작/종료 인덱스 계산
     const startSlotIndex = Math.max(0, Math.floor(eventTop / slotHeight))
     const endSlotIndex = Math.min(
       slots.length,
       Math.ceil(eventBottom / slotHeight)
     )
-    
+
     // 해당 범위의 모든 타임슬롯에 배경색 적용
     for (let i = startSlotIndex; i < endSlotIndex && i < slots.length; i++) {
       const slot = slots[i]
@@ -532,17 +608,17 @@ function hexToRgbaFromString(colorStr, alpha) {
       return match.replace(/,\s*[\d.]+\)$/, `, ${alpha})`)
     })
   }
-  
+
   // hex 색상인 경우
   if (colorStr.startsWith('#')) {
     return hexToRgba(colorStr, alpha)
   }
-  
+
   // rgb 형식인 경우
   if (colorStr.includes('rgb')) {
     return rgbToRgba(colorStr, alpha)
   }
-  
+
   return colorStr
 }
 
@@ -573,88 +649,111 @@ const onDateChange = async () => {
 }
 
 /* 뷰 변경 */
+// 뷰 변경 시 이벤트 로드
+// 중복 방지: isChangingView 플래그로 datesSet와의 중복 방지
 const changeView = async (view) => {
   const api = calendarRef.value.getApi()
-  const currentDate = api.getDate() // 현재 캘린더의 날짜 저장
-  
-  // 뷰 변경 중 플래그 설정
+  if (!api) return
+
+  const currentDate = api.getDate()
+
+  // 뷰 변경 중 플래그 설정 (datesSet가 호출되지 않도록)
   isChangingView.value = true
-  
+  // 날짜 범위 초기화 (새 뷰에서는 새로 로드해야 함)
+  lastLoadedDateRange.value = null
+
   currentView.value = view
   api.changeView(view)
-  // 뷰 변경 후 날짜 유지
   api.gotoDate(currentDate)
-  
-  // 주간/일간 뷰로 변경될 때 명시적으로 예약 데이터 로드
-  if (view === 'timeGridWeek' || view === 'timeGridDay') {
-    await nextTick()
-    const startDate = api.getDate().toISOString().slice(0, 10)
-    try {
-      const res = await reservationApi.getWeeklyReservations(startDate)
-      const json = res.data.reservations ? res.data : res.data.data?.reservations ? res.data.data : res.data.result?.reservations ? res.data.result : null
-      
-      if (json && json.reservations) {
-        const events = convertReservationsToEvents(json)
-        calendarEvents.value = events
-        
-        api.removeAllEvents()
-        events.forEach(ev => api.addEvent(ev))
-        
-        await nextTick()
+
+  try {
+    // 주간/일간 뷰로 변경될 때 명시적으로 예약 데이터 로드
+    if (view === 'timeGridWeek' || view === 'timeGridDay') {
+      await nextTick()
+      const startDate = api.getDate().toISOString().slice(0, 10)
+
+      // Guard: 이미 로딩 중이면 스킵
+      if (isLoadingEvents.value) {
         setTimeout(() => {
-          applySlotBackgrounds()
-        }, 600)
-      } else {
-        api.removeAllEvents()
-        calendarEvents.value = []
+          isChangingView.value = false
+        }, 500)
+        return
       }
-    } catch (err) {
-      console.error('주별 예약 조회 실패:', err)
-    } finally {
-      // 뷰 변경 완료 후 플래그 해제 (항상 해제)
+
+      isLoadingEvents.value = true
+      lastLoadedDateRange.value = {
+        start: startDate,
+        end: startDate,
+        view: view
+      }
+
+      try {
+        const res = await reservationApi.getWeeklyReservations(startDate)
+        const json = res.data.reservations ? res.data : res.data.data?.reservations ? res.data.data : res.data.result?.reservations ? res.data.result : null
+
+        if (json && json.reservations) {
+          const events = convertReservationsToEvents(json)
+          calendarEvents.value = events
+
+          // 이벤트 추가 중 플래그 설정
+          isAddingEvents.value = true
+          api.removeAllEvents()
+          events.forEach(ev => api.addEvent(ev))
+          await nextTick()
+          isAddingEvents.value = false
+
+          setTimeout(() => {
+            applySlotBackgrounds()
+          }, 600)
+        } else {
+          isAddingEvents.value = true
+          api.removeAllEvents()
+          isAddingEvents.value = false
+          calendarEvents.value = []
+        }
+      } catch (err) {
+        console.error('주별 예약 조회 실패:', err)
+      } finally {
+        isLoadingEvents.value = false
+        setTimeout(() => {
+          isChangingView.value = false
+        }, 500)
+      }
+    } else {
+      // 월별 뷰로 변경될 때는 월별 데이터 로드
+      await loadCalendarEvents()
       setTimeout(() => {
         isChangingView.value = false
-      }, 800)
+      }, 300)
     }
-  } else {
-    // 월별 뷰로 변경될 때는 월별 데이터 로드
-    await loadCalendarEvents()
-    setTimeout(() => {
-      isChangingView.value = false
-    }, 300)
+  } catch (err) {
+    console.error('뷰 변경 실패:', err)
+    isChangingView.value = false
   }
 }
 
 /* 최초 로딩 */
+// 컴포넌트 마운트 시 초기 데이터 로드
+// 중복 방지: datesSet가 자동으로 호출되므로 여기서는 스킵하거나 datesSet가 호출되기 전에만 실행
 onMounted(async () => {
-  // 초기 로딩 시 현재 뷰에 맞는 데이터 로드
-  if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
+  // FullCalendar가 마운트되고 datesSet가 자동으로 호출되므로
+  // 여기서는 명시적으로 로드하지 않고 datesSet에 맡김
+  // 단, datesSet가 호출되지 않는 경우를 대비해 약간의 지연 후 확인
+  await nextTick()
+
+  // datesSet가 호출되지 않았을 경우를 대비한 안전장치
+  setTimeout(() => {
     const api = calendarRef.value?.getApi()
-    if (api) {
-      const startDate = api.getDate().toISOString().slice(0, 10)
-      try {
-        const res = await reservationApi.getWeeklyReservations(startDate)
-        const json = res.data.reservations ? res.data : res.data.data?.reservations ? res.data.data : res.data.result?.reservations ? res.data.result : null
-        
-        if (json && json.reservations) {
-          const events = convertReservationsToEvents(json)
-          calendarEvents.value = events
-          
-          api.removeAllEvents()
-          events.forEach(ev => api.addEvent(ev))
-          
-          await nextTick()
-          setTimeout(() => {
-            applySlotBackgrounds()
-          }, 600)
-        }
-      } catch (err) {
-        console.error('주별 예약 조회 실패:', err)
+    if (api && !isLoadingEvents.value && calendarEvents.value.length === 0) {
+      // datesSet가 호출되지 않았으면 수동으로 로드
+      if (currentView.value === 'timeGridWeek' || currentView.value === 'timeGridDay') {
+        const startDate = api.getDate().toISOString().slice(0, 10)
+        lastLoadedDateRange.value = null // 강제 로드
+      } else {
+        loadCalendarEvents()
       }
     }
-  } else {
-    await loadCalendarEvents()
-  }
+  }, 500)
 })
 
 /* ------------------------------------
@@ -751,8 +850,8 @@ const onMiniCalendarEventClick = (event) => {
   padding: 20px;
   max-width: 1920px;
   margin: 0 auto;
-  height: calc(100vh - 120px);
-  overflow: hidden;
+  min-height: calc(100vh - 120px);
+  overflow: visible;
   align-items: flex-start;
 }
 
@@ -761,8 +860,8 @@ const onMiniCalendarEventClick = (event) => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  height: calc(100vh - 160px);
+  overflow: visible;
+  min-height: calc(100vh - 160px);
 }
 
 .calendar-container {
@@ -773,17 +872,17 @@ const onMiniCalendarEventClick = (event) => {
 .calendar-card {
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
 }
 
 .calendar-content-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow: visible;
   padding: 16px;
 }
 
@@ -825,17 +924,18 @@ const onMiniCalendarEventClick = (event) => {
   padding: 0;
   background: #fafafa;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100%;
-  max-height: calc(100vh - 300px);
+  min-height: 100%;
+  /* max-height 제거하여 모든 시간 슬롯이 표시되도록 함 */
 }
 
 .calendar-wrapper :deep(.fc) {
-  height: 100% !important;
+  height: auto !important;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -843,27 +943,42 @@ const onMiniCalendarEventClick = (event) => {
 .calendar-wrapper :deep(.fc-view-harness) {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
-  max-height: 100%;
+  /* max-height 제거하여 모든 시간 슬롯이 표시되도록 함 */
 }
 
 .calendar-wrapper :deep(.fc-scroller) {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
-  max-height: calc(100vh - 300px);
+  /* max-height 제거하여 모든 시간 슬롯이 표시되도록 함 */
+  height: auto !important;
 }
 
 .calendar-wrapper :deep(.fc-timegrid-body) {
   overflow: visible;
+  height: auto !important;
+}
+
+.calendar-wrapper :deep(.fc-scrollgrid-body) {
+  overflow: visible;
+  height: auto !important;
+}
+
+.calendar-wrapper :deep(.fc-scroller-liquid-absolute) {
+  position: relative !important;
+  height: auto !important;
 }
 
 .calendar-wrapper :deep(.fc-timegrid-body .fc-scroller) {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
-  max-height: calc(100vh - 300px);
+  /* max-height 제거하여 모든 시간 슬롯이 표시되도록 함 */
+  /* 높이를 자동으로 계산하여 24:00까지 모든 슬롯이 표시되도록 함 */
+  height: auto !important;
+  min-height: calc(25 * 60px); /* 25시간 * 60px (각 슬롯 높이) = 24:00까지 표시 */
 }
 
 /* FullCalendar 한국어 스타일 개선 */

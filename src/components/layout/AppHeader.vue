@@ -4,8 +4,9 @@ import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { authApi } from '@/api/authApi'
 import { hasRole } from '@/utils/role'
 import NotificationDropdown from '@/components/notification/NotificationDropdown.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
-// Vue 3 + Vite 표준: 로고 이미지 import
+// 로고 이미지 import
 import logoUrl from '@/assets/icons/logo.svg'
 
 const route = useRoute()
@@ -16,10 +17,12 @@ const searchQuery = ref('')
 const showSearchResults = ref(false)
 const selectedIndex = ref(-1)
 
+// 로그아웃 확인 모달
+const showLogoutModal = ref(false)
+
 // 검색 가능한 메뉴 목록 (권한별)
 const searchableMenus = computed(() => {
   const menus = []
-  const role = localStorage.getItem('role') || ''
   const isAdminOrManager = hasRole('MANAGER')
   const isAdminOnly = hasRole('ADMIN')
 
@@ -231,7 +234,7 @@ const roleText = computed(() => {
 })
 
 // ===============================
-// 🏷️ 역할 텍스트 (역할만 표시)
+// 역할 텍스트 (역할만 표시)
 // ===============================
 const currentRoleText = computed(() => {
   return (
@@ -281,13 +284,42 @@ function goToDashboard() {
 }
 
 // ===============================
-// 🔐 로그아웃
+// 🔐 로그아웃 확인 모달 표시
 // ===============================
-async function logout() {
-  await authApi.logout()
+function logout() {
+  showLogoutModal.value = true
+}
+
+// ===============================
+// 🔐 실제 로그아웃 실행
+// ===============================
+async function performLogout() {
+  showLogoutModal.value = false
+
+  // SSE 연결 먼저 종료 (ERR_SOCKET_NOT_CONNECTED 방지)
+  try {
+    const { sseService } = await import('@/services/sseService')
+    if (sseService && sseService.isConnected) {
+      sseService.disconnect()
+    }
+  } catch (err) {
+    console.warn('SSE disconnect failed:', err)
+  }
+
+  // 로그아웃 API 호출
+  try {
+    await authApi.logout()
+  } catch (err) {
+    // 로그아웃 실패해도 로컬 정리는 진행
+    console.warn('Logout API failed:', err)
+  }
+
+  // 로컬 스토리지 정리
   localStorage.removeItem('accessToken')
   localStorage.removeItem('role')
   localStorage.removeItem('userName')
+
+  // 페이지 이동
   router.push('/')
 }
 
@@ -318,7 +350,6 @@ const breadcrumbMap = {
   users: '유저 관리',
   roles: '역할 관리',
   permissions: '권한 관리',
-  list: '권한 관리',
   schedule: '일정 관리',
   reservation: '예약 관리',
   guide: '설명서',
@@ -545,12 +576,21 @@ const breadcrumbItems = computed(() => {
         </div>
       </div>
 
-      <i class="ri-question-line icon"></i>
-
       <button class="logout" @click="logout">
         <i class="ri-logout-box-line"></i>
       </button>
     </div>
+
+    <!-- 로그아웃 확인 모달 -->
+    <Transition name="modal">
+      <ConfirmModal
+        v-if="showLogoutModal"
+        title="로그아웃"
+        message="로그아웃 하시겠습니까?"
+        @confirm="performLogout"
+        @cancel="showLogoutModal = false"
+      />
+    </Transition>
   </header>
 </template>
 
@@ -786,5 +826,53 @@ const breadcrumbItems = computed(() => {
   background: none;
   cursor: pointer;
   font-size: 20px;
+}
+
+/* 모달 Transition 애니메이션 */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-active :deep(.modal-backdrop),
+.modal-leave-active :deep(.modal-backdrop) {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-active :deep(.modal-box),
+.modal-leave-active :deep(.modal-box) {
+  transition: all 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from :deep(.modal-backdrop),
+.modal-leave-to :deep(.modal-backdrop) {
+  opacity: 0;
+}
+
+.modal-enter-from :deep(.modal-box),
+.modal-leave-to :deep(.modal-box) {
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px);
+}
+
+.modal-enter-to,
+.modal-leave-from {
+  opacity: 1;
+}
+
+.modal-enter-to :deep(.modal-backdrop),
+.modal-leave-from :deep(.modal-backdrop) {
+  opacity: 1;
+}
+
+.modal-enter-to :deep(.modal-box),
+.modal-leave-from :deep(.modal-box) {
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 </style>

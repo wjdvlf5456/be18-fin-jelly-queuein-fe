@@ -1,11 +1,5 @@
 <template>
-  <el-table
-    :data="rows"
-    border
-    style="width: 100%"
-    highlight-current-row
-    @row-click="onRowClick"
-  >
+  <el-table :data="rows" border style="width: 100%" highlight-current-row @row-click="onRowClick">
     <!-- 체크박스 -->
     <el-table-column type="selection" min-width="48" />
 
@@ -21,7 +15,7 @@
     <!-- 예약 가능 여부 -->
     <el-table-column prop="isReservable" label="예약 가능 여부" min-width="150" align="center">
       <template #default="scope">
-        {{ scope.row.reservable ? "가능" : "불가능" }}
+        {{ scope.row.reservable ? '가능' : '불가능' }}
       </template>
     </el-table-column>
 
@@ -50,11 +44,9 @@
     <!-- 사유 -->
     <el-table-column label="사유" min-width="150" align="center">
       <template #default="scope">
-        {{ scope.row.reason || "-" }}
+        {{ scope.row.reason || '-' }}
       </template>
     </el-table-column>
-
-
   </el-table>
 
   <!-- Pagination -->
@@ -66,42 +58,47 @@
       :current-page="page"
       @current-change="changePage"
     />
-
   </div>
 </template>
 
 <script setup>
-
-import { reservationApi } from "@/api/reservationApi"
-import { ref, watch } from "vue" 
+import { reservationApi } from '@/api/reservationApi'
+import { ref, watch } from 'vue'
 const props = defineProps({
-  filters: { 
-    type: Object, 
+  filters: {
+    type: Object,
     default: () => ({
-      date: "",
-      assetType: "",
-      assetStatus: "",
-      categoryId: "",
-      layerZero: "",
-      layerOne: "",
-      assetName: ""    
-    }) 
-  }
+      date: '',
+      assetType: '',
+      assetStatus: '',
+      categoryId: '',
+      layerZero: '',
+      layerOne: '',
+      assetName: '',
+    }),
+  },
 })
 
 const rows = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
-const emit = defineEmits(["page-change", "approve", "reject", "open-detail"])
+const emit = defineEmits(['page-change', 'approve', 'reject', 'open-detail'])
 
 const onRowClick = (row, column) => {
-  if (column?.type === "selection") return
+  if (column?.type === 'selection') return
   if (!row?.reservationId) return
-  emit("open-detail", row.reservationId)
+  emit('open-detail', row.reservationId)
 }
 const fetchReservations = async () => {
   try {
+    if (!props.filters?.date) {
+      console.warn('날짜가 없습니다.')
+      rows.value = []
+      total.value = 0
+      return
+    }
+
     const params = {
       page: page.value - 1,
       size: pageSize.value,
@@ -111,15 +108,30 @@ const fetchReservations = async () => {
       categoryId: props.filters.categoryId || undefined,
       layerZero: props.filters.layerZero || undefined,
       layerOne: props.filters.layerOne || undefined,
-      assetName: props.filters.assetName || undefined
+      assetName: props.filters.assetName || undefined,
     }
+
+    // 빈 값 제거
+    Object.keys(params).forEach((key) => {
+      if (params[key] === undefined || params[key] === '') {
+        delete params[key]
+      }
+    })
 
     const res = await reservationApi.getAppliedReservations(params)
 
-    rows.value = res?.data?.content ?? []
-    total.value = res?.data?.totalElements ?? 0
+    if (res?.data) {
+      rows.value = res.data.content ?? []
+      total.value = res.data.totalElements ?? 0
+    } else {
+      console.warn('응답 데이터 형식이 올바르지 않습니다.')
+      rows.value = []
+      total.value = 0
+    }
   } catch (err) {
-    console.error("예약 조회 실패:", err)
+    console.error('예약 조회 실패:', err)
+    rows.value = []
+    total.value = 0
   }
 }
 
@@ -134,10 +146,8 @@ watch(
     page.value = 1
     fetchReservations()
   },
-  { deep: true, immediate: true }
+  { deep: true, immediate: true },
 )
-
-
 </script>
 
 <style scoped>

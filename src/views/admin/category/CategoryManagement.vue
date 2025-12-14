@@ -86,6 +86,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { categoryApi } from '@/api/categoryApi'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import CategoryFormModal from './CategoryFormModal.vue'
@@ -111,9 +112,30 @@ function resolveCreatedBy(id) {
 }
 
 async function loadCategories() {
-  const res = await categoryApi.getManagementList(page.value, size.value)
-  categories.value = res.data.content
-  total.value = res.data.totalElements
+  try {
+    if (page.value < 0) {
+      page.value = 0
+    }
+    if (size.value <= 0) {
+      size.value = 10
+    }
+
+    const res = await categoryApi.getManagementList(page.value, size.value)
+
+    if (res?.data) {
+      categories.value = res.data.content || []
+      total.value = res.data.totalElements || 0
+    } else {
+      console.warn('응답 데이터 형식이 올바르지 않습니다.')
+      categories.value = []
+      total.value = 0
+    }
+  } catch (error) {
+    console.error('카테고리 목록 조회 실패:', error)
+    ElMessage.error('카테고리 목록을 불러오는데 실패했습니다.')
+    categories.value = []
+    total.value = 0
+  }
 }
 
 function changePage(newPage) {
@@ -122,23 +144,124 @@ function changePage(newPage) {
 }
 
 async function createCategory(data) {
-  await categoryApi.create(data)
-  alert('카테고리가 생성되었습니다.')
-  showCreateModal.value = false
-  loadCategories()
+  try {
+    // 유효성 검사
+    if (!data.name || data.name.trim() === '') {
+      ElMessage.warning('카테고리명을 입력해주세요.')
+      return
+    }
+
+    await categoryApi.create(data)
+    ElMessage.success('카테고리가 생성되었습니다.')
+    showCreateModal.value = false
+    await loadCategories()
+  } catch (error) {
+    console.error('카테고리 생성 실패:', error)
+
+    let errorMessage = '카테고리 생성에 실패했습니다.'
+
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+
+      if (status === 400) {
+        errorMessage = data?.message || '입력 정보가 올바르지 않습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '카테고리 생성 권한이 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '이미 존재하는 카테고리입니다.'
+      } else {
+        errorMessage = data?.message || `카테고리 생성에 실패했습니다. (${status})`
+      }
+    } else if (error.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
+  }
 }
 
 async function updateCategory(data) {
-  await categoryApi.update(editTarget.value.categoryId, data)
-  alert('카테고리가 수정되었습니다.')
-  showEditModal.value = false
-  loadCategories()
+  try {
+    // 유효성 검사
+    if (!editTarget.value?.categoryId) {
+      ElMessage.warning('수정할 카테고리를 선택해주세요.')
+      return
+    }
+
+    if (!data.name || data.name.trim() === '') {
+      ElMessage.warning('카테고리명을 입력해주세요.')
+      return
+    }
+
+    await categoryApi.update(editTarget.value.categoryId, data)
+    ElMessage.success('카테고리가 수정되었습니다.')
+    showEditModal.value = false
+    await loadCategories()
+  } catch (error) {
+    console.error('카테고리 수정 실패:', error)
+
+    let errorMessage = '카테고리 수정에 실패했습니다.'
+
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+
+      if (status === 400) {
+        errorMessage = data?.message || '입력 정보가 올바르지 않습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '카테고리 수정 권한이 없습니다.'
+      } else if (status === 404) {
+        errorMessage = data?.message || '카테고리를 찾을 수 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '충돌이 발생했습니다. 다시 시도해주세요.'
+      } else {
+        errorMessage = data?.message || `카테고리 수정에 실패했습니다. (${status})`
+      }
+    } else if (error.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
+  }
 }
 
 async function confirmDelete() {
-  await categoryApi.delete(selectedCategory.value.categoryId)
-  showDeleteModal.value = false
-  loadCategories()
+  try {
+    if (!selectedCategory.value?.categoryId) {
+      ElMessage.warning('삭제할 카테고리를 선택해주세요.')
+      showDeleteModal.value = false
+      return
+    }
+
+    await categoryApi.delete(selectedCategory.value.categoryId)
+    ElMessage.success('카테고리가 삭제되었습니다.')
+    showDeleteModal.value = false
+    await loadCategories()
+  } catch (error) {
+    console.error('카테고리 삭제 실패:', error)
+
+    let errorMessage = '카테고리 삭제에 실패했습니다.'
+
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+
+      if (status === 403) {
+        errorMessage = data?.message || '카테고리 삭제 권한이 없습니다.'
+      } else if (status === 404) {
+        errorMessage = data?.message || '카테고리를 찾을 수 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '카테고리를 사용 중이어서 삭제할 수 없습니다.'
+      } else {
+        errorMessage = data?.message || `카테고리 삭제에 실패했습니다. (${status})`
+      }
+    } else if (error.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
+  }
 }
 
 function openCreateModal() {

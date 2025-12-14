@@ -1,11 +1,12 @@
 import { notificationApi } from '@/api/notificationApi'
-import api from '@/api/axios'
+import { authApi } from '@/api/authApi'
 
 class SseService {
   constructor() {
     this.eventSource = null
     this.listeners = new Map()
     this.isConnected = false
+    this.isConnecting = false // 연결 시도 중 여부
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
     this.reconnectDelay = 3000
@@ -16,7 +17,7 @@ class SseService {
   // 토큰 갱신 (최초 연결 시에만 사용)
   async refreshToken() {
     try {
-      const res = await api.post('/auth/refresh')
+      const res = await authApi.refresh()
       const newAccessToken = res.data.accessToken
       if (newAccessToken) {
         localStorage.setItem('accessToken', newAccessToken)
@@ -24,33 +25,53 @@ class SseService {
         return newAccessToken
       }
     } catch (err) {
-      console.error('Failed to refresh token for SSE:', err)
-      // refresh 실패 시 로그아웃 처리
-      localStorage.clear()
-      window.location.href = '/'
+      // refresh 실패 시 조용히 처리 (401은 정상적인 경우일 수 있음)
+      // refresh 토큰이 만료되었거나 없을 때는 에러를 출력하지 않음
+      // 401 에러는 조용히 무시 (콘솔에 표시하지 않음)
+      if (err.response?.status !== 401) {
+        console.error('Failed to refresh token for SSE:', err)
+      }
+      // refresh 실패 시 로그아웃 처리하지 않음 (사용자가 로그인 상태일 수 있음)
+      return null
     }
     return null
   }
 
   // SSE 연결
   async connect(onMessage, onError) {
+    // 이미 연결되어 있고 열려있으면 재연결하지 않음
     if (this.isConnected && this.eventSource && this.eventSource.readyState === EventSource.OPEN) {
-      console.warn('SSE is already connected')
+      console.log('SSE is already connected')
       return this.eventSource
     }
+
+    // 연결 중이면 대기
+    if (this.isConnecting) {
+      console.log('SSE connection already in progress')
+      return null
+    }
+
+    this.isConnecting = true
 
     try {
       // 최초 연결 시에만 토큰 갱신 (재연결 시에는 갱신하지 않음)
       if (this.isInitialConnect) {
-        await this.refreshToken()
+        const refreshed = await this.refreshToken()
+        // refresh 토큰이 만료되었거나 없으면 SSE 연결 시도하지 않음
+        if (!refreshed) {
+          this.isConnecting = false
+          // 조용히 실패 (콘솔에 표시하지 않음)
+          return null
+        }
         this.isInitialConnect = false
       }
-      
+
       this.eventSource = await notificationApi.subscribe()
 
       this.eventSource.onopen = () => {
         console.log('SSE connected')
         this.isConnected = true
+        this.isConnecting = false
         this.reconnectAttempts = 0 // 연결 성공 시 재시도 횟수 리셋
         // 재연결 타이머 클리어
         if (this.reconnectTimer) {
@@ -75,28 +96,37 @@ class SseService {
       }
 
       this.eventSource.onerror = (error) => {
-        console.error('SSE error:', error)
-        
+        this.isConnecting = false
+
         // readyState 확인
         // 0: CONNECTING, 1: OPEN, 2: CLOSED
         if (this.eventSource.readyState === EventSource.CLOSED) {
           this.isConnected = false
-          
-          if (onError) {
+
+          // 에러가 401이 아니면만 로그 출력
+          if (onError && error?.response?.status !== 401) {
             onError(error)
           }
-          
+
           // 재연결 시도 (토큰 갱신 없이)
           this.scheduleReconnect(onMessage, onError)
         }
       }
     } catch (err) {
-      console.error('Failed to create SSE connection:', err)
-      if (onError) {
+      this.isConnecting = false
+
+      // 401 에러는 조용히 처리
+      if (err?.response?.status !== 401) {
+        console.error('Failed to create SSE connection:', err)
+      }
+
+      if (onError && err?.response?.status !== 401) {
         onError(err)
       }
-      // 초기 연결 실패 시에도 재연결 시도
-      this.scheduleReconnect(onMessage, onError)
+      // 초기 연결 실패 시에도 재연결 시도 (401이 아닐 때만)
+      if (err?.response?.status !== 401) {
+        this.scheduleReconnect(onMessage, onError)
+      }
     }
 
     return this.eventSource
@@ -110,13 +140,15 @@ class SseService {
     }
 
     this.reconnectAttempts++
-    
+
     // Exponential backoff: 재연결 시도가 많을수록 대기 시간 증가
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
     const maxDelay = 30000 // 최대 30초
     const finalDelay = Math.min(delay, maxDelay)
-    
-    console.log(`Scheduling reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${finalDelay}ms...`)
+
+    console.log(
+      `Scheduling reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${finalDelay}ms...`,
+    )
 
     // 재연결 전에 토큰 갱신 (재연결 시에만, 최초 연결이 아닐 때)
     // 하지만 너무 자주 갱신하지 않도록 제한
@@ -124,16 +156,22 @@ class SseService {
 
     this.reconnectTimer = setTimeout(async () => {
       this.disconnect()
-      
+
       // 재연결 시 토큰 갱신 (제한적으로)
       if (shouldRefresh) {
         try {
-          await this.refreshToken()
+          const refreshed = await this.refreshToken()
+          // refresh 실패 시 재연결 중단
+          if (!refreshed) {
+            console.log('Skipping reconnect due to refresh token failure')
+            return
+          }
         } catch (err) {
           console.error('Token refresh failed during reconnect:', err)
+          return
         }
       }
-      
+
       await this.connect(onMessage, onError)
     }, finalDelay)
   }
@@ -179,4 +217,3 @@ class SseService {
 
 // 싱글톤 인스턴스
 export const sseService = new SseService()
-

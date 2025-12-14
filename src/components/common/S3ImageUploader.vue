@@ -1,11 +1,25 @@
 <template>
   <div class="s3-image-uploader">
     <!-- 이미지 미리보기 영역 -->
-    <div v-if="imageUrl || previewUrl" class="image-preview">
+    <div v-if="imageUrl || previewUrl" class="image-preview" :class="{ 'has-error': errorMessage }">
       <img :src="previewUrl || imageUrl" alt="Preview" />
       <button class="remove-btn" @click="removeImage" type="button">
         <i class="pi pi-times"></i>
       </button>
+      <!-- 기존 이미지가 있을 때 이미지 변경 버튼 -->
+      <div v-if="imageUrl && !previewUrl && !isUploading" class="change-overlay">
+        <button class="change-btn" @click="triggerFileInput" type="button">
+          <i class="pi pi-pencil"></i>
+          이미지 변경
+        </button>
+      </div>
+      <!-- 업로드 실패 시 재시도 버튼 -->
+      <div v-if="errorMessage && previewUrl && !imageUrl" class="retry-overlay">
+        <button class="retry-btn" @click="retryUpload" type="button">
+          <i class="pi pi-refresh"></i>
+          다시 시도
+        </button>
+      </div>
     </div>
 
     <!-- 업로드 영역 -->
@@ -71,6 +85,7 @@ const uploadProgress = ref(0)
 const errorMessage = ref('')
 const previewUrl = ref('')
 const imageUrl = ref(props.modelValue)
+const currentFile = ref(null) // 현재 선택된 파일 저장 (재시도용)
 
 // modelValue 변경 감지
 watch(
@@ -193,11 +208,15 @@ async function uploadToS3(file) {
     imageUrl.value = fileUrl
     emit('update:modelValue', fileUrl)
 
+    // 성공 시 에러 메시지 및 현재 파일 초기화
+    errorMessage.value = ''
+    currentFile.value = null
+
     ElMessage.success('이미지가 업로드되었습니다.')
   } catch (error) {
     console.error('이미지 업로드 실패:', error)
     errorMessage.value = '이미지 업로드에 실패했습니다. 다시 시도해주세요.'
-    previewUrl.value = ''
+    // 업로드 실패해도 미리보기는 유지 (previewUrl.value = '' 제거)
     ElMessage.error('이미지 업로드에 실패했습니다.')
   } finally {
     isUploading.value = false
@@ -232,6 +251,11 @@ function removeImage() {
   overflow: hidden;
   border: 2px solid #e5e7eb;
   background: #f9fafb;
+}
+
+.image-preview.has-error {
+  border-color: #fecaca;
+  border-width: 2px;
 }
 
 .image-preview img {
@@ -372,6 +396,90 @@ function removeImage() {
 }
 
 .error-message i {
+  font-size: 16px;
+}
+
+/* 재시도 오버레이 */
+.retry-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.retry-btn {
+  padding: 12px 24px;
+  background: #00a950;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #008a42;
+  transform: scale(1.05);
+}
+
+.retry-btn i {
+  font-size: 16px;
+}
+
+/* 이미지 변경 오버레이 */
+.change-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-preview:hover .change-overlay {
+  opacity: 1;
+}
+
+.change-btn {
+  padding: 12px 24px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.change-btn:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.change-btn i {
   font-size: 16px;
 }
 </style>

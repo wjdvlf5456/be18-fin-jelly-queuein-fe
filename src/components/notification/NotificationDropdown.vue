@@ -254,16 +254,28 @@ onMounted(async () => {
 
   // 초기에 알림 목록을 불러와 뱃지 카운트 표시
   await loadNotifications()
-  
+
   // SSE 연결 (비동기로 처리)
-  try {
-    await sseService.connect(handleSseMessage, (error) => {
-      console.error('SSE connection error:', error)
-    })
-  } catch (err) {
-    console.error('Failed to initialize SSE connection:', err)
+  // refresh 토큰이 만료되었거나 없을 수 있으므로 에러를 조용히 처리
+  // 이미 연결되어 있으면 다시 연결하지 않음
+  if (!sseService.isConnected) {
+    try {
+      const eventSource = await sseService.connect(handleSseMessage, (error) => {
+        // SSE 연결 에러는 조용히 처리 (refresh 토큰 만료 등 정상적인 경우일 수 있음)
+        // 401 에러는 콘솔에 표시하지 않음
+        if (error?.response?.status !== 401) {
+          console.error('SSE connection error:', error)
+        }
+      })
+      // eventSource가 null이면 연결 실패 (refresh 토큰 문제 등) - 조용히 처리
+    } catch (err) {
+      // refresh 토큰 관련 에러는 조용히 처리 (401은 콘솔에 표시하지 않음)
+      if (err?.response?.status !== 401) {
+        console.error('Failed to initialize SSE connection:', err)
+      }
+    }
   }
-  
+
   // 리스너 등록
   sseService.addListener('notification-dropdown', handleSseMessage)
 })

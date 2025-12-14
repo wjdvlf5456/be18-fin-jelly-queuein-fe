@@ -165,7 +165,7 @@ const router = createRouter({
           ],
         },
 
-        // ========== ⭐ 자원 관리 그룹 ==========
+        // ========== 자원 관리 그룹 ==========
         {
           path: 'assets',
           meta: { minRole: 'MANAGER' },
@@ -173,6 +173,11 @@ const router = createRouter({
             // /admin/assets  → /admin/assets/list 리디렉트
             { path: '', redirect: '/admin/assets/list' },
 
+            {
+              path: 'dashboard',
+              component: () => import('@/views/admin/asset/AssetDashboard.vue'),
+              meta: { title: '대시보드', minRole: 'MANAGER' },
+            },
             {
               path: 'list',
               component: () => import('@/views/admin/asset/AssetManagement.vue'),
@@ -204,7 +209,7 @@ const router = createRouter({
         },
         // 다른 Admin 메뉴는 필요 시 추가 가능
         // ---------------------------------------------------------
-        // ⭐ 정산 메뉴 (Layout 제거됨)
+        // 정산 메뉴 (Layout 제거됨)
         // ---------------------------------------------------------
         {
           path: 'accounting',

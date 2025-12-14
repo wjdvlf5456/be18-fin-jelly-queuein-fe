@@ -1,4 +1,3 @@
-
 import './assets/main.css'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
@@ -7,14 +6,13 @@ import 'element-plus/dist/index.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
-
-import App from './App.vue';
-import router from './router';
+import App from './App.vue'
+import router from './router'
 
 // PrimeVue v4
-import PrimeVue from 'primevue/config';
-import Aura from '@primevue/themes/aura';
-import Chart from 'primevue/chart';
+import PrimeVue from 'primevue/config'
+import Aura from '@primevue/themes/aura'
+import Chart from 'primevue/chart'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import Toast from 'primevue/toast'
@@ -26,17 +24,14 @@ import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
-
-
 // Styles
-import 'primeicons/primeicons.css';
-import 'primeflex/primeflex.css';
-
+import 'primeicons/primeicons.css'
+import 'primeflex/primeflex.css'
 
 // Remixicon
-import 'remixicon/fonts/remixicon.css';
+import 'remixicon/fonts/remixicon.css'
 
-const app = createApp(App);
+const app = createApp(App)
 
 app.use(ElementPlus)
 app.use(createPinia())
@@ -46,10 +41,10 @@ app.use(PrimeVue, {
   theme: {
     preset: Aura,
     options: {
-      darkModeSelector: false // 필요 없으면 그대로 두면 됨
-    }
-  }
-});
+      darkModeSelector: false, // 필요 없으면 그대로 두면 됨
+    },
+  },
+})
 
 app.component('Dialog', Dialog)
 app.component('Button', Button)
@@ -63,4 +58,9 @@ app.component('Card', Card)
 app.component('Tag', Tag)
 app.component('DataTable', DataTable)
 app.component('Column', Column)
-app.mount('#app');
+
+// PrimeVue Menu 컴포넌트 전역 등록
+import Menu from 'primevue/menu'
+app.component('Menu', Menu)
+
+app.mount('#app')
