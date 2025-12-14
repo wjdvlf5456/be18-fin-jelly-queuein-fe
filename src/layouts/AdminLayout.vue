@@ -134,8 +134,8 @@ function onTransitionEnter() {
   /* 화면이 넘치지 않도록 내부만 스크롤 */
   overflow-y: auto;
 
-  /* 필요한 만큼만 여백 */
-  padding: 5px 20px;
+  /* 더 넓은 여백으로 일관성 유지 */
+  padding: 32px;
 
   box-sizing: border-box;
 }

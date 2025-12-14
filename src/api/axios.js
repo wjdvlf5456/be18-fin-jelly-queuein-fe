@@ -9,9 +9,11 @@ axios.defaults.withCredentials = true
 
 // 요청 인터셉터 — Authorization 자동 추가
 api.interceptors.request.use((config) => {
+  // refresh 요청은 토큰 추가하지 않음 (쿠키로 처리)
   if (config.url.includes('/auth/refresh')) {
     return config
   }
+  // logout 요청은 토큰이 필요하므로 추가
   const token = localStorage.getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
@@ -38,6 +40,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
+    // refresh 요청의 401 에러는 조용히 처리 (SSE 연결 시 정상적인 경우일 수 있음)
+    if (error.config?.url?.includes('/auth/refresh') && error.response?.status === 401) {
+      // 에러를 그대로 반환하되, 메시지나 리다이렉트는 하지 않음
+      return Promise.reject(error)
+    }
+
     // 403
     if (error.response && error.response.status === 403) {
       // 1) 모달 메시지
@@ -53,7 +61,10 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       // 로그인/로그아웃 API는 토큰 리프레시하지 않음
-      if (originalRequest.url.includes('/auth/logout') || originalRequest.url.includes('/auth/login')) {
+      if (
+        originalRequest.url.includes('/auth/logout') ||
+        originalRequest.url.includes('/auth/login')
+      ) {
         return Promise.reject(error)
       }
 
@@ -70,7 +81,8 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const res = await api.post('/auth/refresh')
+        const { authApi } = await import('./authApi')
+        const res = await authApi.refresh()
 
         const newAccess = res.data.accessToken
 
@@ -89,7 +101,10 @@ api.interceptors.response.use(
       }
     }
 
-    if (error.response?.data) {
+    // refresh 요청의 401 에러는 메시지 표시하지 않음
+    const isRefreshRequest = error.config?.url?.includes('/auth/refresh')
+
+    if (error.response?.data && !isRefreshRequest) {
       const data = error.response.data
       // data.code 또는 data.message 활용
       if (data.message) {
@@ -109,7 +124,7 @@ api.interceptors.response.use(
       } else {
         ElMessage.error('서버 오류가 발생했습니다.')
       }
-    } else {
+    } else if (!isRefreshRequest) {
       ElMessage.error('서버와 연결할 수 없습니다.')
     }
 

@@ -1,11 +1,6 @@
 <template>
   <div class="tab-full-wrapper">
-    <el-tabs
-      v-model="active"
-      class="accounting-tabs"
-      @tab-click="onTabClick"
-      type="line"
-    >
+    <el-tabs v-model="active" class="accounting-tabs" @tab-click="onTabClick">
       <el-tab-pane label="자원 사용 기록" name="history" />
       <el-tab-pane label="사용 추이" name="trend" />
       <el-tab-pane label="운영 성과 분석" name="performance" />
@@ -58,9 +53,9 @@ onMounted(async () => {
 // 라우팅 변경되면 탭 활성 상태 갱신
 watch(
   () => route.path,
-  newPath => {
+  (newPath) => {
     active.value = getTabName(newPath)
-  }
+  },
 )
 </script>
 
@@ -77,7 +72,7 @@ watch(
   width: 100%;
 }
 
-/* ⭐ Element Plus 기본 탭 스타일과 동일하게 설정 */
+/* Element Plus 기본 탭 스타일과 동일하게 설정 */
 .accounting-tabs :deep(.el-tabs__item) {
   flex: 1;
   text-align: center;
@@ -94,18 +89,18 @@ watch(
 
 /* hover 초록색 */
 .accounting-tabs :deep(.el-tabs__item:hover) {
-  color: #00A950 !important;
+  color: #00a950 !important;
 }
 
 /* active 초록색 */
 .accounting-tabs :deep(.el-tabs__item.is-active) {
-  color: #00A950 !important;
+  color: #00a950 !important;
   font-weight: 600 !important; /* 활성 탭만 조금 더 강조 */
 }
 
 /* active bar 초록색 */
 .accounting-tabs :deep(.el-tabs__active-bar) {
-  background-color: #00A950 !important;
+  background-color: #00a950 !important;
   height: 3px !important;
 }
 </style>

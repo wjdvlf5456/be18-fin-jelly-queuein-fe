@@ -22,6 +22,7 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -40,8 +41,25 @@ const modalOpen = ref(false)
 const reservationDetail = ref(null)
 
 async function fetchWeekReservations(start) {
-  const res = await reservationApi.getWeeklyReservations(start)
-  return res.data
+  try {
+    if (!start) {
+      console.error('시작 날짜가 없습니다.')
+      return { timeSlots: [] }
+    }
+
+    const res = await reservationApi.getWeeklyReservations(start)
+
+    if (res?.data) {
+      return res.data
+    } else {
+      console.warn('응답 데이터 형식이 올바르지 않습니다.')
+      return { timeSlots: [] }
+    }
+  } catch (error) {
+    console.error('주간 예약 조회 실패:', error)
+    ElMessage.error('예약 정보를 불러오는데 실패했습니다.')
+    return { timeSlots: [] }
+  }
 }
 
 /* 예약 상태별 옅은 색상 매핑 */
@@ -142,9 +160,11 @@ const calendarOptions = computed(() => ({
     hour12: false
   },
   slotMinTime: '00:00:00',
-  slotMaxTime: '24:00:00',
+  slotMaxTime: '25:00:00', // exclusive end time이므로 24:00까지 표시하려면 25:00 필요
+  slotDuration: '00:30:00',
   contentHeight: 'auto',
   height: 'auto',
+  scrollTime: '00:00:00',
 
   eventContent: (arg) => {
     const startTime = arg.event.start ? arg.event.start.toTimeString().slice(0, 5) : ''
@@ -189,17 +209,17 @@ const calendarOptions = computed(() => ({
   eventDidMount: (arg) => {
     const event = arg.event
     if (!event.start || !event.end) return
-    
+
     const bgColor = event.backgroundColor || '#fce7f3'
     const textColor = event.textColor || '#9f1239'
-    
+
     // fc-event-main에 custom-event-chip과 동일한 색상 적용 (solid color)
     const eventMain = arg.el.querySelector('.fc-event-main')
     if (eventMain) {
       eventMain.style.backgroundColor = bgColor
       eventMain.style.color = textColor
     }
-    
+
     // 타임슬롯 배경색 적용
     setTimeout(() => {
       applySlotBackgrounds()
@@ -218,10 +238,10 @@ function applySlotBackgrounds() {
     console.warn('[applySlotBackgrounds] calendarRef.value?.getApi():', calendarRef.value?.getApi())
     return
   }
-  
+
   console.log('[applySlotBackgrounds] Calendar element found:', calendarEl)
   console.log('[applySlotBackgrounds] Starting...')
-  
+
   // 모든 타임슬롯 배경색 초기화
   const allSlots = calendarEl.querySelectorAll('.fc-timegrid-slot')
   console.log('[applySlotBackgrounds] Found slots:', allSlots.length)
@@ -229,16 +249,16 @@ function applySlotBackgrounds() {
     slot.style.backgroundColor = ''
     slot.classList.remove('has-event-slot')
   })
-  
+
   // 모든 이벤트 엘리먼트 찾기
   const allEvents = calendarEl.querySelectorAll('.fc-timegrid-event')
   console.log('[applySlotBackgrounds] Found events:', allEvents.length)
-  
+
   if (allEvents.length === 0) {
     console.warn('[applySlotBackgrounds] No events found')
     return
   }
-  
+
   allEvents.forEach((eventEl, eventIndex) => {
     console.log(`[applySlotBackgrounds] Processing event ${eventIndex + 1}...`)
     // 이벤트의 배경색 가져오기 (인라인 스타일에서)
@@ -247,45 +267,45 @@ function applySlotBackgrounds() {
       console.warn(`[applySlotBackgrounds] Event ${eventIndex + 1}: custom-event-chip not found`)
       return
     }
-    
+
     // 인라인 스타일에서 배경색 가져오기
     const bgColorStyle = eventChip.getAttribute('style')
     if (!bgColorStyle || !bgColorStyle.includes('background-color')) {
       console.warn(`[applySlotBackgrounds] Event ${eventIndex + 1}: no background-color in style`)
       return
     }
-    
+
     const bgColorMatch = bgColorStyle.match(/background-color:\s*([^;]+)/)
     if (!bgColorMatch) {
       console.warn(`[applySlotBackgrounds] Event ${eventIndex + 1}: could not parse background-color`)
       return
     }
-    
+
     const bgColor = bgColorMatch[1].trim()
     const rgba = hexToRgbaFromString(bgColor, 0.3)
     console.log(`[applySlotBackgrounds] Event ${eventIndex + 1}: bgColor=${bgColor}, rgba=${rgba}`)
-    
+
     // 이벤트가 속한 타임슬롯 찾기
     const timeGridCol = eventEl.closest('.fc-timegrid-col')
     if (!timeGridCol) {
       console.warn(`[applySlotBackgrounds] Event ${eventIndex + 1}: timeGridCol not found`)
       return
     }
-    
+
     const colFrame = timeGridCol.querySelector('.fc-timegrid-col-frame')
     if (!colFrame) {
       console.warn(`[applySlotBackgrounds] Event ${eventIndex + 1}: colFrame not found`)
       return
     }
-    
+
     // 이벤트의 실제 위치 계산
     const eventRect = eventEl.getBoundingClientRect()
     const colRect = colFrame.getBoundingClientRect()
     const eventTop = eventRect.top - colRect.top
     const eventBottom = eventRect.bottom - colRect.top
-    
+
     console.log(`[applySlotBackgrounds] Event ${eventIndex + 1}: eventTop=${eventTop}, eventBottom=${eventBottom}`)
-    
+
     // 실제 타임슬롯 높이 계산 (첫 번째 슬롯의 높이 사용)
     const firstSlot = colFrame.querySelector('.fc-timegrid-slot')
     if (!firstSlot) {
@@ -294,7 +314,7 @@ function applySlotBackgrounds() {
     }
     const slotHeight = firstSlot.getBoundingClientRect().height || 60
     console.log(`[applySlotBackgrounds] Event ${eventIndex + 1}: slotHeight=${slotHeight}`)
-    
+
     // 시작/종료 인덱스 계산
     const slots = colFrame.querySelectorAll('.fc-timegrid-slot')
     const startSlotIndex = Math.max(0, Math.floor(eventTop / slotHeight))
@@ -302,9 +322,9 @@ function applySlotBackgrounds() {
       slots.length,
       Math.ceil(eventBottom / slotHeight)
     )
-    
+
     console.log(`[applySlotBackgrounds] Event ${eventIndex + 1}: startSlotIndex=${startSlotIndex}, endSlotIndex=${endSlotIndex}, slots.length=${slots.length}`)
-    
+
     // 해당 범위의 모든 타임슬롯에 배경색 적용
     let appliedCount = 0
     for (let i = startSlotIndex; i < endSlotIndex && i < slots.length; i++) {
@@ -317,7 +337,7 @@ function applySlotBackgrounds() {
     }
     console.log(`[applySlotBackgrounds] Event ${eventIndex + 1}: Applied to ${appliedCount} slots`)
   })
-  
+
   console.log('[applySlotBackgrounds] Finished')
 }
 
@@ -329,17 +349,17 @@ function hexToRgbaFromString(colorStr, alpha) {
       return match.replace(/,\s*[\d.]+\)$/, `, ${alpha})`)
     })
   }
-  
+
   // hex 색상인 경우
   if (colorStr.startsWith('#')) {
     return hexToRgba(colorStr, alpha)
   }
-  
+
   // rgb 형식인 경우
   if (colorStr.includes('rgb')) {
     return rgbToRgba(colorStr, alpha)
   }
-  
+
   return colorStr
 }
 
@@ -367,34 +387,64 @@ function hexToRgba(hex, alpha) {
 ------------------------------------ */
 const openDetailModal = async (reservationId) => {
   try {
+    if (!reservationId || isNaN(reservationId)) {
+      ElMessage.warning('유효하지 않은 예약 ID입니다.')
+      return
+    }
+
     const res = await reservationApi.getReservationDetail(reservationId)
+
+    if (!res?.data) {
+      ElMessage.error('예약 정보를 불러올 수 없습니다.')
+      return
+    }
+
     const d = res.data
 
     reservationDetail.value = {
       id: d.reservationId,
-      name: d.assetName,
-      status: d.reservationStatus,
-      usage: d.reservationStatus,
-      isApproved: d.isApproved,
-      reserver: d.applicantName,
-      approver: d.respondentName,
-      assetStatus: d.assetStatus,
-      date: d.date,
+      name: d.assetName || '',
+      status: d.reservationStatus || '',
+      usage: d.reservationStatus || '',
+      isApproved: d.isApproved ?? false,
+      reserver: d.applicantName || '',
+      approver: d.respondentName || '',
+      assetStatus: d.assetStatus || '',
+      date: d.date || '',
 
-      startAt: d.startAt,
-      endAt: d.endAt,
-      actualStartAt: d.actualStartAt,
-      actualEndAt: d.actualEndAt,
+      startAt: d.startAt || '',
+      endAt: d.endAt || '',
+      actualStartAt: d.actualStartAt || '',
+      actualEndAt: d.actualEndAt || '',
 
-      participants: d.attendants,
+      participants: d.attendants || [],
 
-      reason: d.reason,
-      note: d.description,
+      reason: d.reason || '',
+      note: d.description || '',
     }
 
     modalOpen.value = true
   } catch (err) {
     console.error('상세 조회 실패:', err)
+
+    let errorMessage = '예약 상세 정보를 불러오는데 실패했습니다.'
+
+    if (err.response) {
+      const status = err.response.status
+      const data = err.response.data
+
+      if (status === 404) {
+        errorMessage = data?.message || '예약을 찾을 수 없습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '예약 조회 권한이 없습니다.'
+      } else {
+        errorMessage = data?.message || `예약 상세 정보를 불러오는데 실패했습니다. (${status})`
+      }
+    } else if (err.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
   }
 }
 
@@ -403,7 +453,13 @@ const openDetailModal = async (reservationId) => {
 ------------------------------------ */
 const handleStart = async (id) => {
   try {
+    if (!id || isNaN(id)) {
+      ElMessage.warning('유효하지 않은 예약 ID입니다.')
+      return
+    }
+
     await reservationApi.startUsing(id)
+    ElMessage.success('사용이 시작되었습니다.')
     modalOpen.value = false
     const api = calendarRef.value?.getApi()
     if (api) {
@@ -414,12 +470,41 @@ const handleStart = async (id) => {
     }
   } catch (err) {
     console.error('사용 시작 실패:', err)
+
+    let errorMessage = '사용 시작에 실패했습니다.'
+
+    if (err.response) {
+      const status = err.response.status
+      const data = err.response.data
+
+      if (status === 400) {
+        errorMessage = data?.message || '요청 정보가 올바르지 않습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '사용 시작 권한이 없습니다.'
+      } else if (status === 404) {
+        errorMessage = data?.message || '예약을 찾을 수 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '예약 상태가 변경되었습니다.'
+      } else {
+        errorMessage = data?.message || `사용 시작에 실패했습니다. (${status})`
+      }
+    } else if (err.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
   }
 }
 
 const handleEnd = async (id) => {
   try {
+    if (!id || isNaN(id)) {
+      ElMessage.warning('유효하지 않은 예약 ID입니다.')
+      return
+    }
+
     await reservationApi.endUsing(id)
+    ElMessage.success('사용이 종료되었습니다.')
     modalOpen.value = false
     const api = calendarRef.value?.getApi()
     if (api) {
@@ -430,12 +515,41 @@ const handleEnd = async (id) => {
     }
   } catch (err) {
     console.error('사용 종료 실패:', err)
+
+    let errorMessage = '사용 종료에 실패했습니다.'
+
+    if (err.response) {
+      const status = err.response.status
+      const data = err.response.data
+
+      if (status === 400) {
+        errorMessage = data?.message || '요청 정보가 올바르지 않습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '사용 종료 권한이 없습니다.'
+      } else if (status === 404) {
+        errorMessage = data?.message || '예약을 찾을 수 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '예약 상태가 변경되었습니다.'
+      } else {
+        errorMessage = data?.message || `사용 종료에 실패했습니다. (${status})`
+      }
+    } else if (err.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
   }
 }
 
 const handleCancel = async (id) => {
   try {
+    if (!id || isNaN(id)) {
+      ElMessage.warning('유효하지 않은 예약 ID입니다.')
+      return
+    }
+
     await reservationApi.cancel(id)
+    ElMessage.success('예약이 취소되었습니다.')
     modalOpen.value = false
     const api = calendarRef.value?.getApi()
     if (api) {
@@ -446,6 +560,29 @@ const handleCancel = async (id) => {
     }
   } catch (err) {
     console.error('예약 취소 실패:', err)
+
+    let errorMessage = '예약 취소에 실패했습니다.'
+
+    if (err.response) {
+      const status = err.response.status
+      const data = err.response.data
+
+      if (status === 400) {
+        errorMessage = data?.message || '요청 정보가 올바르지 않습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '예약 취소 권한이 없습니다.'
+      } else if (status === 404) {
+        errorMessage = data?.message || '예약을 찾을 수 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '예약 상태가 변경되어 취소할 수 없습니다.'
+      } else {
+        errorMessage = data?.message || `예약 취소에 실패했습니다. (${status})`
+      }
+    } else if (err.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
   }
 }
 

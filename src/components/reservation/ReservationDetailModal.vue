@@ -1,6 +1,6 @@
 <template>
-  <div 
-    class="modal-overlay" 
+  <div
+    class="modal-overlay"
     v-if="asset && visible"
     @click.self="close"
   >
@@ -70,28 +70,38 @@
       <div class="footer" v-if="actionLabel"   :class="{ 'has-edit': normalizedUsage === 'PENDING' || normalizedUsage === 'APPROVED' }">
 
         <!-- 수정 버튼: PENDING 또는 APPROVED 상태일 때만 -->
-        <!-- <button 
+        <!-- <button
           v-if="normalizedUsage === 'PENDING' || normalizedUsage === 'APPROVED'"
           class="footer-btn"
-          @click="onEdit" 
-        > 수정 
-          
+          @click="onEdit"
+        > 수정
+
         </button> -->
-        <button 
+        <button
           class="footer-btn"
           :disabled="isActionDisabled"
-          @click="onAction"
+          @click="onActionClick"
         >
           {{ actionLabel }}
         </button>
       </div>
+
+      <!-- 예약 취소 확인 모달 -->
+      <ConfirmModal
+        v-if="showCancelConfirm"
+        title="예약 취소"
+        message="정말 예약을 취소하시겠습니까?"
+        @confirm="onCancelConfirm"
+        @cancel="showCancelConfirm = false"
+      />
 
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue"
+import { computed, ref } from "vue"
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -159,7 +169,7 @@ const normalizedUsage = computed(() =>
 const actionLabel = computed(() => {
   switch (normalizedUsage.value) {
     case "PENDING":
-      return "취소"
+      return "예약 취소"
     case "APPROVED":
       return "사용 시작"
     case "USING":
@@ -174,8 +184,8 @@ const actionLabel = computed(() => {
       return "사용불가"
     case "CANCELED":
       return "취소됨"
-      
-      
+
+
     default:
       return null
   }
@@ -185,15 +195,42 @@ const isActionDisabled = computed(() =>
   ["COMPLETED", "CANCELED", "REJECTED"].includes(normalizedUsage.value)
 )
 
+// 예약 취소 확인 모달
+const showCancelConfirm = ref(false)
+
 /* -------------------------------------------
-   버튼 클릭 → 서버 요청 이벤트 + 모달 닫힘
+   버튼 클릭 처리
+------------------------------------------- */
+const onActionClick = () => {
+  const usage = normalizedUsage.value
+
+  // PENDING 상태일 때는 확인 모달 표시
+  if (usage === "PENDING") {
+    showCancelConfirm.value = true
+    return
+  }
+
+  // 다른 액션은 바로 실행
+  onAction()
+}
+
+/* -------------------------------------------
+   예약 취소 확인 처리
+------------------------------------------- */
+const onCancelConfirm = () => {
+  showCancelConfirm.value = false
+  emit("cancel", props.asset.id)
+  emit("close")
+}
+
+/* -------------------------------------------
+   서버 요청 이벤트 + 모달 닫힘
 ------------------------------------------- */
 const onAction = () => {
   const usage = normalizedUsage.value
 
   if (usage === "APPROVED") emit("start", props.asset.id)
   if (usage === "USING" || usage === "IN_USE") emit("end", props.asset.id)
-  if (usage === "PENDING") emit("cancel", props.asset.id)
 
   // 버튼 클릭 후 모달 자동 닫힘
   emit("close")

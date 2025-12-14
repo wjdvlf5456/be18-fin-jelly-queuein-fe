@@ -36,12 +36,7 @@
           <span>{{ assetTitle }}</span>
         </div>
 
-        <Chart
-          type="bar"
-          :data="chartData"
-          :options="chartOptions"
-          style="width: 100%; height: 360px;"
-        />
+        <div ref="mainChartRef" class="chart-container"></div>
       </div>
 
       <div class="right-cards">
@@ -144,8 +139,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import api from "@/api/axios";
+import * as echarts from "echarts";
 
 /* ================================
       연도 관련 설정
@@ -160,8 +156,10 @@ const assetName = ref("");
 const assetTitle = ref("전체");
 
 const summary = ref({});
-const chartData = ref({});
-const chartOptions = ref({});
+
+// ECharts 인스턴스
+const mainChartRef = ref(null);
+let mainChart = null;
 
 /* ================================
       에러 모달
@@ -251,8 +249,8 @@ async function loadYears() {
 ================================ */
 async function loadTargetByYear() {
   try {
-    const { data } = await api.get("/accounting/usage-history/years");
-    yearList.value = data.years;
+    const { data } = await api.get(`/accounting/usage-targets/${viewYear.value}`);
+    viewTargetRate.value = data.targetRate;
   } catch (e) {
     console.error("연도별 목표 조회 실패:", e);
     viewTargetRate.value = 0;
@@ -300,6 +298,98 @@ async function registerTarget() {
 }
 
 /* ================================
+      ECharts 초기화
+================================ */
+function initChart() {
+  if (mainChartRef.value && !mainChart) {
+    mainChart = echarts.init(mainChartRef.value);
+  }
+}
+
+function resizeChart() {
+  mainChart?.resize();
+}
+
+/* ================================
+      막대 차트 업데이트
+================================ */
+function updateChart(labels, baseData, compareData) {
+  if (!mainChart) return;
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      },
+      formatter: function(params) {
+        let result = params[0].name + '<br/>';
+        params.forEach(function(item) {
+          result += item.seriesName + ': ' + Math.floor(item.value).toLocaleString('ko-KR') + '원<br/>';
+        });
+        return result;
+      }
+    },
+    legend: {
+      data: [selectedBaseYear.value, selectedCompareYear.value],
+      top: 10,
+      right: 20,
+      textStyle: {
+        color: '#333'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: labels,
+      axisLabel: {
+        color: '#666'
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        color: '#666',
+        formatter: function(value) {
+          return Math.floor(value).toLocaleString('ko-KR') + '원';
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0'
+        }
+      }
+    },
+    series: [
+      {
+        name: selectedBaseYear.value,
+        type: 'bar',
+        data: baseData,
+        itemStyle: {
+          color: '#8B5401'
+        }
+      },
+      {
+        name: selectedCompareYear.value,
+        type: 'bar',
+        data: compareData,
+        itemStyle: {
+          color: '#00A950'
+        }
+      }
+    ]
+  };
+
+  mainChart.setOption(option);
+}
+
+/* ================================
       KPI 데이터 조회
 ================================ */
 async function loadData() {
@@ -319,25 +409,8 @@ async function loadData() {
     const base = data.monthlyData.map((m) => m.baseYearSaving);
     const compare = data.monthlyData.map((m) => m.compareYearSaving);
 
-    chartData.value = {
-      labels,
-      datasets: [
-        { label: selectedBaseYear.value, backgroundColor: "#8B5401", data: base },
-        { label: selectedCompareYear.value, backgroundColor: "#00A950", data: compare },
-      ],
-    };
-
-    chartOptions.value = {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          ticks: {
-            callback: (v) => v.toLocaleString("ko-KR") + "원",
-          },
-        },
-      },
-    };
+    await nextTick();
+    updateChart(labels, base, compare);
   } catch (err) {
     errorMessage.value = "등록되지 않은 자원입니다.";
     showErrorModal.value = true;
@@ -357,14 +430,26 @@ function formatMoney(v) {
 ================================ */
 onMounted(async () => {
   window.addEventListener("keyup", handleKeyPress);
+  window.addEventListener("resize", resizeChart);
 
   await loadYears();       // 먼저 연도 목록 불러옴
+
+  await nextTick();
+  initChart();
+
   await loadData();        // 그 다음 KPI 데이터 불러옴
   loadTargetStatus();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keyup", handleKeyPress);
+  window.removeEventListener("resize", resizeChart);
+  mainChart?.dispose();
+});
+
+// 연도 변경 시 차트 업데이트
+watch([selectedBaseYear, selectedCompareYear], () => {
+  loadData();
 });
 </script>
 
@@ -433,6 +518,18 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   padding: 30px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.chart-container {
+  width: 100%;
+  height: 360px;
 }
 
 .right-cards {

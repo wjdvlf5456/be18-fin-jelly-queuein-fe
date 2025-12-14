@@ -31,38 +31,36 @@
     <!-- 본문 -->
     <div class="content-wrapper">
 
-      <!-- 차트 박스 -->
+      <!-- 메인 차트 박스 -->
       <div class="chart-box">
         <div class="chart-header">
           <span>{{ dataAssetName }}</span>
         </div>
 
-        <Chart
-          type="line"
-          :data="chartData"
-          :options="chartOptions"
-          style="width:100%; height:500px;"
-        />
+        <div ref="mainChartRef" class="chart-container"></div>
       </div>
 
-      <!-- 오른쪽 카드 -->
-      <div class="right-cards">
-        <div class="info-card">
-          <h3>{{ summary.usageRateIncrease }}%</h3>
-          <p>{{ selectedBaseYear }}년 대비 {{ selectedCompareYear }}년<br/>예약 증가율</p>
-        </div>
+    </div>
 
-        <div class="info-card">
-          <h3>{{ summary.actualUsageIncrease }}%</h3>
-          <p>{{ selectedBaseYear }}년 대비 {{ selectedCompareYear }}년<br/>실 사용률 증가</p>
-        </div>
-
-        <div class="info-card">
-          <h3>{{ summary.resourceUtilizationIncrease }}%</h3>
-          <p>{{ selectedBaseYear }}년 대비 {{ selectedCompareYear }}년<br/>가동률 증가</p>
-        </div>
+    <!-- 하단 차트 영역 -->
+    <div class="bottom-charts">
+      <!-- 사용 횟수 TOP 3 -->
+      <div class="bottom-chart-card">
+        <h3 class="chart-title">사용 횟수 TOP 3 ({{ selectedBaseYear }}년 vs {{ selectedCompareYear }}년)</h3>
+        <div ref="usageCountChartRef" class="bottom-chart-container"></div>
       </div>
 
+      <!-- 사용 시간 TOP 3 -->
+      <div class="bottom-chart-card">
+        <h3 class="chart-title">사용 시간 TOP 3 ({{ selectedBaseYear }}년 vs {{ selectedCompareYear }}년)</h3>
+        <div ref="usageTimeChartRef" class="bottom-chart-container"></div>
+      </div>
+
+      <!-- 사용 증가율 (더 크게) -->
+      <div class="bottom-chart-card large">
+        <h3 class="chart-title">사용 증가율 ({{ selectedBaseYear }}년 vs {{ selectedCompareYear }}년)</h3>
+        <div ref="increaseRateChartRef" class="bottom-chart-container large"></div>
+      </div>
     </div>
 
     <!-- ======================= -->
@@ -83,13 +81,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue"
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue"
 import api from "@/api/axios"
+import * as echarts from "echarts"
 
 // ---------------------
 // 상태
 // ---------------------
-const yearList = ref([])  
+const yearList = ref([])
 const currentYear = new Date().getFullYear()
 
 const selectedBaseYear = ref(currentYear - 1)   // 작년
@@ -97,9 +96,17 @@ const selectedCompareYear = ref(currentYear)    // 올해
 const assetName = ref("")
 
 const dataAssetName = ref("")
-const summary = ref({})
-const chartData = ref({})
-const chartOptions = ref({})
+
+// ECharts 인스턴스
+const mainChartRef = ref(null)
+const usageCountChartRef = ref(null)
+const usageTimeChartRef = ref(null)
+const increaseRateChartRef = ref(null)
+
+let mainChart = null
+let usageCountChart = null
+let usageTimeChart = null
+let increaseRateChart = null
 
 // ---------------------
 // 모달 상태
@@ -123,6 +130,323 @@ onBeforeUnmount(() => {
 })
 
 // ---------------------
+// ECharts 초기화
+// ---------------------
+function initCharts() {
+  if (mainChartRef.value && !mainChart) {
+    mainChart = echarts.init(mainChartRef.value)
+  }
+  if (usageCountChartRef.value && !usageCountChart) {
+    usageCountChart = echarts.init(usageCountChartRef.value)
+  }
+  if (usageTimeChartRef.value && !usageTimeChart) {
+    usageTimeChart = echarts.init(usageTimeChartRef.value)
+  }
+  if (increaseRateChartRef.value && !increaseRateChart) {
+    increaseRateChart = echarts.init(increaseRateChartRef.value)
+  }
+}
+
+function resizeCharts() {
+  mainChart?.resize()
+  usageCountChart?.resize()
+  usageTimeChart?.resize()
+  increaseRateChart?.resize()
+}
+
+// ---------------------
+// 메인 라인 차트 설정
+// ---------------------
+function updateMainChart(labels, baseValues, compareValues) {
+  if (!mainChart) return
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross'
+      }
+    },
+    legend: {
+      data: [selectedBaseYear.value, selectedCompareYear.value],
+      top: 10,
+      right: 20,
+      textStyle: {
+        color: '#333'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: labels,
+      axisLabel: {
+        color: '#666'
+      }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      interval: 20,
+      axisLabel: {
+        formatter: '{value}',
+        color: '#666'
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0'
+        }
+      }
+    },
+    series: [
+      {
+        name: selectedBaseYear.value,
+        type: 'line',
+        data: baseValues,
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          color: '#E6A500',
+          width: 2
+        },
+        itemStyle: {
+          color: '#E6A500'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(230, 165, 0, 0.2)' },
+              { offset: 1, color: 'rgba(230, 165, 0, 0)' }
+            ]
+          }
+        }
+      },
+      {
+        name: selectedCompareYear.value,
+        type: 'line',
+        data: compareValues,
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          color: '#00A950',
+          width: 2
+        },
+        itemStyle: {
+          color: '#00A950'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(0, 169, 80, 0.2)' },
+              { offset: 1, color: 'rgba(0, 169, 80, 0)' }
+            ]
+          }
+        }
+      }
+    ]
+  }
+
+  mainChart.setOption(option)
+}
+
+// ---------------------
+// 사용 횟수 TOP 3 막대 차트
+// ---------------------
+function updateUsageCountChart(data) {
+  if (!usageCountChart) return
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      axisLabel: {
+        color: '#666'
+      }
+    },
+    yAxis: {
+      type: 'category',
+      data: data.categories || ['회의실 A', '회의실 B', '회의실 C'],
+      axisLabel: {
+        color: '#666'
+      }
+    },
+    series: [
+      {
+        name: selectedBaseYear.value,
+        type: 'bar',
+        data: data.baseYear || [120, 100, 80],
+        itemStyle: {
+          color: '#4A90E2'
+        }
+      },
+      {
+        name: selectedCompareYear.value,
+        type: 'bar',
+        data: data.compareYear || [80, 60, 50],
+        itemStyle: {
+          color: '#00A950'
+        }
+      }
+    ]
+  }
+
+  usageCountChart.setOption(option)
+}
+
+// ---------------------
+// 사용 시간 TOP 3 막대 차트
+// ---------------------
+function updateUsageTimeChart(data) {
+  if (!usageTimeChart) return
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      axisLabel: {
+        color: '#666',
+        formatter: '{value}시간'
+      }
+    },
+    yAxis: {
+      type: 'category',
+      data: data.categories || ['회의실 A', '회의실 B', '회의실 C'],
+      axisLabel: {
+        color: '#666'
+      }
+    },
+    series: [
+      {
+        name: selectedBaseYear.value,
+        type: 'bar',
+        data: data.baseYear || [240, 200, 160],
+        itemStyle: {
+          color: '#4A90E2'
+        }
+      },
+      {
+        name: selectedCompareYear.value,
+        type: 'bar',
+        data: data.compareYear || [160, 120, 100],
+        itemStyle: {
+          color: '#00A950'
+        }
+      }
+    ]
+  }
+
+  usageTimeChart.setOption(option)
+}
+
+// ---------------------
+// 사용 증가율 도넛 차트
+// ---------------------
+function updateIncreaseRateChart(rate) {
+  if (!increaseRateChart) return
+
+  const value = rate || 0
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c}%'
+    },
+    series: [
+      {
+        name: '사용 증가율',
+        type: 'pie',
+        radius: ['45%', '75%'],
+        center: ['50%', '50%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 3
+        },
+        label: {
+          show: true,
+          position: 'center',
+          formatter: `${value}%`,
+          fontSize: 42,
+          fontWeight: 'bold',
+          color: '#333',
+          fontFamily: 'Arial, sans-serif'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 48,
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: [
+          {
+            value: value,
+            name: '증가율',
+            itemStyle: {
+              color: '#00D4AA'
+            }
+          },
+          {
+            value: 100 - value,
+            name: '기타',
+            itemStyle: {
+              color: '#E8E8F0'
+            }
+          }
+        ]
+      }
+    ]
+  }
+
+  increaseRateChart.setOption(option)
+}
+
+// ---------------------
 // API 호출
 // ---------------------
 async function loadData() {
@@ -141,64 +465,41 @@ async function loadData() {
 
     // 데이터 반영
     dataAssetName.value = data.asset.assetName
-    summary.value = data.summary
 
-    const labels = data.monthlyData.map(m => `${m.month}월`)
+    const labels = data.monthlyData.map(m => {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      return monthNames[m.month - 1] || `${m.month}월`
+    })
     const baseValues = data.monthlyData.map(m => m.baseYearUsageRate)
     const compareValues = data.monthlyData.map(m => m.compareYearUsageRate)
 
-    chartData.value = {
-      labels,
-      datasets: [
-        {
-          label: selectedBaseYear.value,
-          data: baseValues,
-          borderColor: "#E6A500",
-          backgroundColor: "rgba(230,165,0,0.2)",
-          fill: false,
-          pointRadius: 4,
-          pointBackgroundColor: "#E6A500",
-          pointBorderColor: "#E6A500",
-          tension: 0
-          
-        },
-        {
-          label: selectedCompareYear.value,
-          data: compareValues,
-          borderColor: "#00A950",
-          backgroundColor: "rgba(0,169,80,0.2)",
-          fill: false,
-          pointRadius: 4,
-          pointBackgroundColor: "#00A950",
-          pointBorderColor: "#00A950",
-          tension: 0
-        }
-      ]
+    await nextTick()
+    updateMainChart(labels, baseValues, compareValues)
+
+    // 하단 차트 데이터 - API에서 받은 데이터 사용
+    if (data.popularByCount) {
+      const baseYearCount = data.popularByCount.baseYear || []
+      const compareYearCount = data.popularByCount.compareYear || []
+      updateUsageCountChart({
+        categories: baseYearCount.map(item => item.assetName).slice(0, 3),
+        baseYear: baseYearCount.map(item => item.count).slice(0, 3),
+        compareYear: compareYearCount.map(item => item.count).slice(0, 3)
+      })
     }
 
-    chartOptions.value = {
-      responsive: true,
-      maintainAspectRatio: false,
-
-      plugins: {
-        legend: {
-          labels: {
-            pointStyle: "line",      // 선(line) 모양
-            boxWidth: 30,            // 선 길이
-            boxHeight: 1,            // 선 두께
-            color: "#333"
-          }
-        }
-      },
-
-      scales: {
-        y: {
-          min: 0,
-          max: 100,
-          ticks: { stepSize: 20 }
-        }
-      }
+    if (data.popularByTime) {
+      const baseYearTime = data.popularByTime.baseYear || []
+      const compareYearTime = data.popularByTime.compareYear || []
+      updateUsageTimeChart({
+        categories: baseYearTime.map(item => item.assetName).slice(0, 3),
+        baseYear: baseYearTime.map(item => Math.round(item.totalMinutes / 60)).slice(0, 3), // 분을 시간으로 변환
+        compareYear: compareYearTime.map(item => Math.round(item.totalMinutes / 60)).slice(0, 3)
+      })
     }
+
+    // 사용 증가율 - actualUsageIncrease 사용
+    const increaseRate = data.actualUsageIncrease ? Math.round(data.actualUsageIncrease * 100) : 0
+    updateIncreaseRateChart(increaseRate)
 
   } catch (err) {
     console.error("API 오류:", err)
@@ -227,9 +528,27 @@ async function loadYears() {
 
 onMounted(async () => {
   window.addEventListener("keyup", handleKeyPress)
+  window.addEventListener("resize", resizeCharts)
 
   await loadYears()   // 먼저 연도 로딩
+
+  await nextTick()
+  initCharts()
+
   await loadData()    // 그다음 사용 추이 로딩
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeCharts)
+  mainChart?.dispose()
+  usageCountChart?.dispose()
+  usageTimeChart?.dispose()
+  increaseRateChart?.dispose()
+})
+
+// 연도 변경 시 차트 업데이트
+watch([selectedBaseYear, selectedCompareYear], () => {
+  loadData()
 })
 
 </script>
@@ -263,7 +582,11 @@ onMounted(async () => {
   outline: none;
 }
 
-.content-wrapper { display: flex; gap: 20px; }
+.content-wrapper {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
 
 .chart-box {
   flex: 1;
@@ -273,20 +596,53 @@ onMounted(async () => {
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.right-cards {
-  width: 240px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.chart-header {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
 }
 
-.info-card {
+.chart-container {
+  width: 100%;
+  height: 500px;
+}
+
+/* 하단 차트 영역 */
+.bottom-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.bottom-chart-card {
   background: white;
-  padding: 18px;
   border-radius: 12px;
+  padding: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
-.info-card h3 { font-size: 26px; color: #00A950; }
+
+.bottom-chart-card.large {
+  grid-column: span 1;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.bottom-chart-container {
+  width: 100%;
+  height: 250px;
+}
+
+.bottom-chart-container.large {
+  height: 350px;
+}
 
 /* ---------------------------------- */
 /* 모달 스타일 */

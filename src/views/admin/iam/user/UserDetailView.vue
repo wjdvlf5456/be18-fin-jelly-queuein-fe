@@ -104,7 +104,15 @@ function firstLetter(name = '') {
             <div class="info-grid">
               <div class="info-item">
                 <label>프로필</label>
-                <div class="avatar">{{ firstLetter(user.userName) }}</div>
+                <div class="avatar">
+                  <img
+                    v-if="user.profileImageUrl"
+                    :src="user.profileImageUrl"
+                    :alt="user.userName"
+                    class="avatar-image"
+                  />
+                  <span v-else>{{ firstLetter(user.userName) }}</span>
+                </div>
               </div>
 
               <div class="info-item">
@@ -246,6 +254,15 @@ label {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: 50%;
 }
 

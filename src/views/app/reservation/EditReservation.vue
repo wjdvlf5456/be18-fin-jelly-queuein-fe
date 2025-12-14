@@ -24,15 +24,15 @@
     <!-- 예약 시간 선택 -->
     <div class="time-section">
       <h2>예약 시간 선택</h2>
-      <TimeBar 
-        :blocks="timeBlocks" 
+      <TimeBar
+        :blocks="timeBlocks"
         v-model="selectedHours"
       />
     </div>
 
     <!-- 선택된 참여자 표시
     <div v-if="selectedUsers.length" class="selected-users">
-      선택된 참여자: 
+      선택된 참여자:
       <span v-for="user in selectedUsers" :key="user.id" class="user-chip">
         {{ user.name }}
       </span>
@@ -51,7 +51,8 @@
 </template>
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import api from '@/api/axios'
 
 import TimeBar from '@/components/reservation/TimeBar.vue'
@@ -61,12 +62,14 @@ import ApplyButton from '@/components/reservation/ApplyButton.vue'
 import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import { reservationApi } from '@/api/reservationApi'
 
+const router = useRouter()
+
 const route = useRoute()
 
 // 목록 페이지에서 전달한 assetId와 date → params 로 변경!
-const assetId = Number(route.query.assetId) 
+const assetId = Number(route.query.assetId)
 
-const selectedDate = ref(route.query.date) 
+const selectedDate = ref(route.query.date)
 const assetName = route.query.assetName?.toString() ?? ""
 
 // 자원 정보
@@ -85,7 +88,7 @@ const note = ref("")
 // -------------------------------
 //  예약 가능 시간 조회 API
 // -------------------------------
-const today = new Date().toLocaleDateString('en-CA')  
+const today = new Date().toLocaleDateString('en-CA')
 
 const rawDate = route.query.date
 const initialDate =
@@ -103,48 +106,101 @@ const onSelectParticipants = (users) => {
 
 
 function convertToTimeBlocks(apiData) {
-  const blocks = []
-  const availableHours = new Set<number>()
-
-  apiData.timeSlots.forEach(slot => {
-    // 1) start, end 숫자로 변환
-    let start = Number(slot.start.slice(0, 2))
-    let end = Number(slot.end.slice(0, 2))
-
-    // 2) end가 00이면 24로 변경 → 정상적인 범위로 조정
-    if (end === 0) end = 24
-
-    // 3) available 이 true 일 때만 availableHours 추가
-    if (slot.available) {
-      for (let h = start; h < end; h++) {
-        availableHours.add(h)
-      }
+  try {
+    if (!apiData || !apiData.timeSlots || !Array.isArray(apiData.timeSlots)) {
+      console.warn('예약 가능 시간 데이터 형식이 올바르지 않습니다.')
+      return []
     }
-  })
 
-  // 4) 0~23 모든 시간대 생성
-  for (let h = 0; h < 24; h++) {
-    blocks.push({
-      label: `${h}:00`,
-      type: availableHours.has(h) ? "available" : "reserved",
-      start: h,
-      end: h + 1
+    const blocks = []
+    const availableHours = new Set<number>()
+
+    apiData.timeSlots.forEach((slot) => {
+      try {
+        if (!slot || !slot.start || !slot.end) {
+          console.warn('시간 슬롯 데이터가 올바르지 않습니다:', slot)
+          return
+        }
+
+        // 1) start, end 숫자로 변환
+        let start = Number(slot.start.slice(0, 2))
+        let end = Number(slot.end.slice(0, 2))
+
+        // 유효성 검사
+        if (isNaN(start) || isNaN(end)) {
+          console.warn('시간 파싱 실패:', slot)
+          return
+        }
+
+        // 2) end가 00이면 24로 변경 → 정상적인 범위로 조정
+        if (end === 0) end = 24
+
+        // 3) available 이 true 일 때만 availableHours 추가
+        if (slot.available) {
+          for (let h = start; h < end; h++) {
+            if (h >= 0 && h < 24) {
+              availableHours.add(h)
+            }
+          }
+        }
+      } catch (slotError) {
+        console.warn('시간 슬롯 처리 중 오류:', slotError, slot)
+      }
     })
-  }
 
-  return blocks
+    // 4) 0~23 모든 시간대 생성
+    for (let h = 0; h < 24; h++) {
+      blocks.push({
+        label: `${h}:00`,
+        type: availableHours.has(h) ? 'available' : 'reserved',
+        start: h,
+        end: h + 1,
+      })
+    }
+
+    return blocks
+  } catch (error) {
+    console.error('시간 블록 변환 실패:', error)
+    return []
+  }
 }
 
 const fetchAvailableTimes = async () => {
-  const res = await reservationApi.getAvailableTimes(assetId, date.value)
+  try {
+    if (!assetId || isNaN(assetId)) {
+      console.error('유효하지 않은 assetId:', assetId)
+      return
+    }
 
-  timeBlocks.value = convertToTimeBlocks(res.data)
+    if (!date.value) {
+      console.error('날짜가 없습니다.')
+      return
+    }
+
+    const res = await reservationApi.getAvailableTimes(assetId, date.value)
+
+    if (res?.data?.timeSlots) {
+      timeBlocks.value = convertToTimeBlocks(res.data)
+    } else {
+      console.warn('예약 가능 시간 데이터 형식이 올바르지 않습니다.')
+      timeBlocks.value = []
+    }
+  } catch (error) {
+    console.error('예약 가능 시간 조회 실패:', error)
+    ElMessage.error('예약 가능 시간을 불러오는데 실패했습니다.')
+    timeBlocks.value = []
+  }
 }
 
 // 날짜 변경 시 자동으로 예약 가능 시간 갱신
-watch(() => date.value, () => {
-  fetchAvailableTimes()
-})
+watch(
+  () => date.value,
+  () => {
+    if (date.value && assetId) {
+      fetchAvailableTimes()
+    }
+  },
+)
 
 
 // -------------------------------
@@ -168,60 +224,121 @@ function toUtcIso(date, hour) {
 }
 
 // -------------------------------
-// 예약 생성 API
+// 예약 수정 API
 // -------------------------------
 async function submitBooking() {
+  try {
+    // 유효성 검사
+    if (!selectedHours.value.length) {
+      ElMessage.warning('예약 시간을 선택해주세요.')
+      return
+    }
 
-  if (!selectedHours.value.length) {
-    alert("예약 시간을 선택해주세요.")
-    return
+    if (!currentUserId.value) {
+      ElMessage.error('사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해주세요.')
+      return
+    }
+
+    if (!assetId || isNaN(assetId)) {
+      ElMessage.error('자원 정보가 올바르지 않습니다.')
+      return
+    }
+
+    if (!date.value) {
+      ElMessage.error('날짜를 선택해주세요.')
+      return
+    }
+
+    const startHour = Math.min(...selectedHours.value)
+    const endHourRaw = Math.max(...selectedHours.value) + 1
+
+    let endDateValue = date.value
+    let endHour = endHourRaw
+
+    if (endHourRaw === 24) {
+      const [y, m, d] = date.value.split('-').map(Number)
+      if (isNaN(y) || isNaN(m) || isNaN(d)) {
+        ElMessage.error('날짜 형식이 올바르지 않습니다.')
+        return
+      }
+      const nextDay = new Date(Date.UTC(y, m - 1, d + 1))
+      endDateValue = nextDay.toISOString().slice(0, 10) // yyyy-MM-dd
+      endHour = 0
+    }
+
+    // --- KST(+09:00) → UTC ISO 변환 ---
+    const startAt = toUtcIso(date.value, startHour)
+    const endAt = toUtcIso(endDateValue, endHour)
+
+    // 시간 유효성 검사
+    if (!startAt || !endAt) {
+      ElMessage.error('예약 시간을 계산하는 중 오류가 발생했습니다.')
+      return
+    }
+
+    const payload = {
+      applicantId: currentUserId.value,
+      attendants: selectedUsers.value.map((u) => ({
+        userId: u.id,
+      })),
+      startAt,
+      endAt,
+      description: note.value || '',
+    }
+
+    await api.post(`/reservations/${assetId}/instant-confirm`, payload)
+
+    ElMessage.success('예약이 수정되었습니다.')
+    router.push('/app/reservations/me')
+  } catch (error) {
+    console.error('예약 수정 실패:', error)
+
+    let errorMessage = '예약 수정에 실패했습니다.'
+
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+
+      if (status === 400) {
+        errorMessage = data?.message || '요청 정보가 올바르지 않습니다. 입력 내용을 확인해주세요.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '예약 수정 권한이 없습니다.'
+      } else if (status === 404) {
+        errorMessage = data?.message || '예약을 찾을 수 없습니다.'
+      } else if (status === 409) {
+        errorMessage = data?.message || '해당 시간대에 이미 예약이 있습니다.'
+      } else {
+        errorMessage = data?.message || `예약 수정에 실패했습니다. (${status})`
+      }
+    } else if (error.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
   }
- 
-  
-  const startHour = Math.min(...selectedHours.value)
-  const endHourRaw = Math.max(...selectedHours.value) + 1
-
-  let endDateValue = date.value
-  let endHour = endHourRaw
-
-  if (endHourRaw === 24) {
-    const [y, m, d] = date.value.split("-").map(Number);
-    const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
-    endDateValue = nextDay.toISOString().slice(0, 10); // yyyy-MM-dd
-    endHour = 0;
-  }
-
-  // --- KST(+09:00) → UTC ISO 변환 ---
-  const startAt = toUtcIso(date.value, startHour);
-  const endAt = toUtcIso(endDateValue, endHour);
-
-  const payload = {
-    applicantId: currentUserId.value,
-    attendants: selectedUsers.value.map(u => ({
-      userId: u.id
-    })),
-    startAt,
-    endAt,
-    description: note.value,  
-  };
-
-
-
-
-  await api.post(`/reservations/${assetId}/instant-confirm`, payload)
 }
 const currentUserName = ref("")
 const currentUserId = ref(null)
 onMounted(async () => {
   try {
-    const res = await api.get("/users/me")
-    currentUserId.value = res.data.userId
-    currentUserName.value = res.data.userName
+    const res = await api.get('/users/me')
+    if (res?.data) {
+      currentUserId.value = res.data.userId
+      currentUserName.value = res.data.userName
+    } else {
+      console.error('사용자 정보 응답 형식이 올바르지 않습니다.')
+      ElMessage.error('사용자 정보를 불러올 수 없습니다.')
+    }
   } catch (e) {
-    console.error("유저 정보 조회 실패", e)
+    console.error('유저 정보 조회 실패', e)
+    ElMessage.error('사용자 정보를 불러오는데 실패했습니다.')
   }
 
-  fetchAvailableTimes()
+  try {
+    await fetchAvailableTimes()
+  } catch (error) {
+    console.error('초기 데이터 로딩 실패:', error)
+  }
 })
 
 

@@ -136,7 +136,7 @@ const props = defineProps({
 })
 const emit = defineEmits(["changePage"])
 
-/* 🔥 조회 모달 상태 */
+/* 조회 모달 상태 */
 const showDetail = ref(false)
 const detailData = ref({})
 

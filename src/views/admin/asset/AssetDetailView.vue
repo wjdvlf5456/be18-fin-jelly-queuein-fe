@@ -68,7 +68,6 @@
       <!-- 하단 버튼들 -->
       <div class="bottom-btns">
         <button class="edit-btn" @click="goEdit">자원 수정</button>
-        <button class="history-btn">자원 수정 이력 조회</button>
       </div>
     </div>
   </div>
@@ -77,22 +76,55 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { assetApi } from '@/api/assetApi'
 import AssetTreeView from './components/AssetTreeView.vue'
 
 const route = useRoute()
 const router = useRouter()
-const assetId = ref(route.params.assetId)
+const assetId = ref(Number(route.params.assetId) || null)
 
 const asset = ref({})
 
 async function loadDetail() {
   try {
+    if (!assetId.value || isNaN(assetId.value)) {
+      ElMessage.error('유효하지 않은 자원 ID입니다.')
+      router.push('/admin/assets')
+      return
+    }
+
     const res = await assetApi.getDetail(assetId.value)
+
+    if (!res?.data) {
+      ElMessage.error('자원 정보를 불러올 수 없습니다.')
+      router.push('/admin/assets')
+      return
+    }
+
     asset.value = res.data
   } catch (e) {
-    console.error(e)
-    alert('자원 정보를 불러오지 못했습니다.')
+    console.error('자원 정보 조회 실패:', e)
+
+    let errorMessage = '자원 정보를 불러오는데 실패했습니다.'
+
+    if (e.response) {
+      const status = e.response.status
+      const data = e.response.data
+
+      if (status === 404) {
+        errorMessage = data?.message || '자원을 찾을 수 없습니다.'
+      } else if (status === 403) {
+        errorMessage = data?.message || '자원 조회 권한이 없습니다.'
+      } else {
+        errorMessage = data?.message || `자원 정보를 불러오는데 실패했습니다. (${status})`
+      }
+    } else if (e.request) {
+      errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
+    }
+
+    ElMessage.error(errorMessage)
+    router.push('/admin/assets')
   }
 }
 
@@ -126,7 +158,7 @@ onMounted(loadDetail)
 watch(
   () => route.params.assetId,
   (newId) => {
-    assetId.value = newId
+    assetId.value = Number(newId) || null
     loadDetail()
   },
 )
