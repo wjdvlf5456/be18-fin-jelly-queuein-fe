@@ -101,7 +101,7 @@ const send = async () => {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   color: white;
   display: flex;
   align-items: center;

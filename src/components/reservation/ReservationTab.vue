@@ -130,8 +130,8 @@ watch(
 .tab-item {
   flex: 1;
   text-align: center;
-  padding: 18px 0;
-  font-size: 20px;
+  padding: 8px 0;
+  font-size: 14px;
   font-weight: 500;
   color: #6b7280;
   cursor: pointer;

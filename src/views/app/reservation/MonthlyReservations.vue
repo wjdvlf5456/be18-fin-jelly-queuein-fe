@@ -914,8 +914,8 @@ const onMiniCalendarEventClick = (event) => {
 }
 
 .calendar-toggle .active-view {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #22c55e;     /* green-500 */
+  border-color: #22c55e;
   color: white;
 }
 
@@ -1019,16 +1019,16 @@ const onMiniCalendarEventClick = (event) => {
 
 :deep(.fc-button:active),
 :deep(.fc-button-active) {
-  background: #667eea;
-  border-color: #667eea;
+  background: #22c55e;      /* green-500 */
+  border-color: #22c55e;
   color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
 }
 
 :deep(.fc-button-primary:not(:disabled):active),
 :deep(.fc-button-primary:not(:disabled).fc-button-active) {
-  background: #667eea;
-  border-color: #667eea;
+  background: #22c55e;
+  border-color: #22c55e;
 }
 
 /* 요일 헤더 스타일 - 단색 배경 */

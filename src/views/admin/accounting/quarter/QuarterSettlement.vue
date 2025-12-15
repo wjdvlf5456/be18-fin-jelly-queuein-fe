@@ -68,9 +68,9 @@
           <td>{{ formatHours(row.actualHours) }}</td>
           <td>{{ formatPercent(row.utilizationRate) }}</td>
           <td>{{ formatPercent(row.performRate) }}</td>
-          <td>{{ formatNumber(row.totalUsageCost) }}</td>
-          <td>{{ formatNumber(row.actualUsageCost) }}</td>
-          <td>{{ formatNumber(row.usageGapCost) }}</td>
+          <td>{{ formatWon(row.totalUsageCost) }}</td>
+          <td>{{ formatWon(row.actualUsageCost) }}</td>
+          <td>{{ formatWon(row.usageGapCost) }}</td>
           <td>{{ row.utilizationGrade }}</td>
           <td>{{ row.performGrade }}</td>
         </tr>
@@ -114,6 +114,11 @@ async function loadYears() {
   } catch (err) {
     console.error("연도 조회 실패:", err)
   }
+}
+
+function formatWon(v) {
+  if (v === null || v === undefined) return "-"
+  return `${Math.round(v).toLocaleString()}원`
 }
 
 // -----------------------------

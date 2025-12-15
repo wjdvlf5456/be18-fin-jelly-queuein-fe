@@ -107,17 +107,17 @@
         </div>
 
         <div class="modal-info">
-          <p><strong>자원명:</strong> {{ detailData.assetName }}</p>
+          <p><strong>자원명 :</strong> {{ detailData.assetName }}</p>
 
-          <p><strong>예약자:</strong>
+          <p><strong>예약자 : </strong>
             <span v-if="detailData.reserverNames?.length">
               {{ detailData.reserverNames.join(", ") }}
             </span>
             <span v-else>없음</span>
           </p>
 
-          <p><strong>청구금액:</strong> {{ detailData.billAmount }}</p>
-          <p><strong>실제 청구금액:</strong> {{ detailData.actualBillAmount }}</p>
+          <p><strong>청구금액 : </strong>{{ formatWon(detailData.billAmount) }}</p>
+          <p><strong>실제 청구금액 : </strong>{{ formatWon(detailData.actualBillAmount) }}</p>
         </div>
       </div>
     </div>
@@ -149,6 +149,12 @@ async function openDetail(id) {
     console.error("상세 조회 실패:", err)
   }
 }
+
+function formatWon(amount) {
+  if (amount === null || amount === undefined) return '-'
+  return `${Math.round(amount).toLocaleString()}원`
+}
+
 
 function closeDetail() {
   showDetail.value = false

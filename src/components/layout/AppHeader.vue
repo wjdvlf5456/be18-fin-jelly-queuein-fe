@@ -7,6 +7,7 @@ import { hasRole } from '@/utils/role'
 import NotificationDropdown from '@/components/notification/NotificationDropdown.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
+
 // 로고 이미지 import
 import logoUrl from '@/assets/icons/logo.svg'
 

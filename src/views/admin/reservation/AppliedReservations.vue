@@ -2,7 +2,7 @@
   <div class="applied-reservations-wrapper">
     <div>
       <!-- 탭 네비게이션 -->
-      <ReservationTab />
+     
 
       <!-- 헤더 -->
       <div class="header-row">
