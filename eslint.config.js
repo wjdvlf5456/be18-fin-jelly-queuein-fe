@@ -7,7 +7,7 @@ import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 export default defineConfig([
   {
     name: 'app/files-to-lint',
-    files: ['**/*.{js,mjs,jsx,vue}'],
+    files: ['**/*.{js,mjs,jsx,ts,tsx,vue}'],
   },
 
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
@@ -16,6 +16,10 @@ export default defineConfig([
     languageOptions: {
       globals: {
         ...globals.browser,
+      },
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
       },
     },
   },

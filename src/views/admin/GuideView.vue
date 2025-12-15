@@ -280,7 +280,7 @@ onMounted(() => {
 
                   <div class="tip-box">
                     <i class="pi pi-info-circle"></i>
-                    <strong>팁:</strong> 권한은 역할 단위로 관리되며, 사용자는 역할을 통해 권한을 상속받습니다.
+                    <strong>tip:</strong> 권한은 역할 단위로 관리되며, 사용자는 역할을 통해 권한을 상속받습니다.
                   </div>
                 </div>
               </AccordionTab>

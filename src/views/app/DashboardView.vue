@@ -255,12 +255,12 @@ watch(
           :emptyMessage="'오늘 예약된 항목이 없습니다.'"
         >
           <Column field="assetName" header="자원명" />
-          <Column field="startAt" header="시작 시간">
+          <Column field="startAt" header="시작 시각">
             <template #body="{ data }">
               {{ formatTime(data.startAt) }}
             </template>
           </Column>
-          <Column field="endAt" header="종료 시간">
+          <Column field="endAt" header="종료 시각">
             <template #body="{ data }">
               {{ formatTime(data.endAt) }}
             </template>

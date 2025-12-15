@@ -188,18 +188,23 @@ watch(
   display: flex;
   gap: 12px;
   width: 100%;
+  max-width: 100%;
   align-items: center;
   padding: 20px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-bottom: 24px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
 }
 
 /* 드롭다운/검색창 공통 비율 */
 .cell {
   flex: 1; /* 비율 기반으로 확대/축소 */
-  min-width: 120px; /* 최소 폭만 지정 */
+  min-width: 100px; /* 최소 폭 줄임 */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 드롭다운 내부의 select 는 셀 폭에 맞게 꽉 채움 */
@@ -237,7 +242,7 @@ watch(
 
 /* 검색 버튼은 고정폭 */
 .search-btn {
-  padding: 10px 24px;
+  padding: 10px 20px;
   background: linear-gradient(135deg, #00a950 0%, #10b981 100%);
   color: white;
   border: none;
@@ -248,6 +253,7 @@ watch(
   font-weight: 600;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 169, 80, 0.2);
+  flex-shrink: 0;
 }
 
 .search-btn:hover {

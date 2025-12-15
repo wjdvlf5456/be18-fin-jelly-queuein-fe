@@ -2,17 +2,14 @@
   <div>
     <LoadingSpinner :visible="isLoading" message="예약 정보를 불러오는 중입니다." />
 
-    <!-- 예약 탭 -->
-    <ReservationTabs />
-
     <!-- 헤더 -->
-    <div class="header-row">
-      <h2>예약 현황</h2>
-      <el-button type="primary" @click="navigateToReservableAssets">
-        <el-icon><Plus /></el-icon>
-        예약 신청
-      </el-button>
-    </div>
+    <h2 class="page-title">예약 현황</h2>
+
+    <!-- 예약 신청 버튼 -->
+    <button class="target-btn" @click="navigateToReservableAssets">
+      <el-icon><Plus /></el-icon>
+      예약 신청
+    </button>
 
     <!-- 날짜 필터 -->
     <ReservationFilters @change="handleFilterChange" />
@@ -24,8 +21,8 @@
         <el-table-column type="selection" width="48" />
 
         <!-- 기본 컬럼들 -->
-        <el-table-column prop="assetName" label="자원명" width="130" align="center" />
-        <el-table-column prop="assetType" label="자원 유형" width="110" align="center" />
+        <el-table-column prop="assetName" label="자원명" min-width="200" align="center" />
+        <el-table-column prop="assetType" label="자원 유형" min-width="150" align="center" />
         <el-table-column prop="categoryName" label="카테고리" width="110" align="center" />
 
         <!-- 자원 상태 -->
@@ -42,15 +39,15 @@
           </template>
         </el-table-column>
 
-        <!-- 예약 시간 -->
-        <el-table-column label="예약 시작/종료 시간" width="200" align="center">
+        <!-- 예약 시각 -->
+        <el-table-column label="예약 시작/종료 시각" width="200" align="center">
           <template #default="{ row }">
             {{ formatTime(row.startAt) }} ~ {{ formatTime(row.endAt) }}
           </template>
         </el-table-column>
 
-        <!-- 실제 시간 -->
-        <el-table-column label="실제 시작/종료 시간" width="200" align="center">
+        <!-- 실제 시각 -->
+        <el-table-column label="실제 시작/종료 시각" width="200" align="center">
           <template #default="{ row }">
             <span v-if="row.actualStartAt">
               {{ formatTime(row.actualStartAt) }} ~ {{ formatTime(row.actualEndAt) }}
@@ -60,7 +57,7 @@
         </el-table-column>
 
         <!-- 예약 상태 -->
-        <el-table-column label="예약 상태" min-width="150" align="center">
+        <el-table-column label="예약 상태" width="120" align="center">
           <template #default="{ row }">
             <StatusTag :status="row.reservationStatus" />
           </template>
@@ -100,7 +97,6 @@ import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationDetailModal from '@/components/reservation/ReservationDetailModal.vue'
 import StatusTag from '@/components/reservation/ReservationStatus.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import { reservationApi } from '@/api/reservationApi'
 import { Plus } from '@element-plus/icons-vue'
 
@@ -519,30 +515,31 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.header-row h2 {
-  font-size: 24px;
+/* 페이지 타이틀 - Accounting과 동일한 스타일 */
+.page-title {
+  font-size: 22px;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+  margin-bottom: 20px;
 }
 
-.header-row .el-button {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 20px;
-  height: auto;
+/* 버튼 - Accounting PerformanceView와 유사한 스타일 */
+.target-btn {
+  position: absolute;
+  right: 40px;
+  top: 130px;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.target-btn:hover {
+  background: #f9fafb;
 }
 
 .pagination {

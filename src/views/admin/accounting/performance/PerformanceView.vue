@@ -161,6 +161,21 @@ const summary = ref({});
 const mainChartRef = ref(null);
 let mainChart = null;
 
+// 메인 막대 차트의 각 시리즈 visibility 상태
+const mainChartVisible = ref({
+  [selectedBaseYear.value]: true,
+  [selectedCompareYear.value]: true,
+});
+
+watch([selectedBaseYear, selectedCompareYear], () => {
+  // 연도가 변경되면 visible 상태도 초기화
+  mainChartVisible.value = {
+    [selectedBaseYear.value]: true,
+    [selectedCompareYear.value]: true,
+  };
+  loadData();
+});
+
 /* ================================
       에러 모달
 ================================ */
@@ -238,6 +253,10 @@ async function loadYears() {
     if (yearList.value.length > 0) {
       selectedBaseYear.value = yearList.value[0]; // 첫 번째 연도
       selectedCompareYear.value = yearList.value[yearList.value.length - 1]; // 마지막 연도
+      mainChartVisible.value = {
+        [yearList.value[0]]: true,
+        [yearList.value[yearList.value.length - 1]]: true,
+      };
     }
   } catch (err) {
     console.error("연도 조회 실패:", err);
@@ -303,6 +322,8 @@ async function registerTarget() {
 function initChart() {
   if (mainChartRef.value && !mainChart) {
     mainChart = echarts.init(mainChartRef.value);
+    // legend click event 등록
+    mainChart.on('legendselectchanged', onMainChartLegendSelectChanged);
   }
 }
 
@@ -310,11 +331,72 @@ function resizeChart() {
   mainChart?.resize();
 }
 
+// 차트용 데이터 메모리 저장(legend 토글 시 다시 그릴 때 사용)
+let mainChartLastLabels = [];
+let mainChartLastBase = [];
+let mainChartLastCompare = [];
+
+// ---------------------------
+// 메인차트 legend 클릭 이벤트
+// ---------------------------
+function onMainChartLegendSelectChanged(params) {
+  // params.selected: { [legend name]: true/false }
+  const selectedStates = params.selected;
+  
+  // 각 연도별로 고유한 이름 보장 (문자열로 명시적 변환)
+  const baseYearName = String(selectedBaseYear.value);
+  const compareYearName = String(selectedCompareYear.value);
+  
+  // 각 범례 항목의 선택 상태를 독립적으로 확인
+  const baseYearSelected = selectedStates[baseYearName] !== undefined 
+    ? !!selectedStates[baseYearName] 
+    : mainChartVisible.value[selectedBaseYear.value] !== false;
+  const compareYearSelected = selectedStates[compareYearName] !== undefined 
+    ? !!selectedStates[compareYearName] 
+    : mainChartVisible.value[selectedCompareYear.value] !== false;
+  
+  // 현재 선택된 시리즈 수 계산
+  const visibleCount = (baseYearSelected ? 1 : 0) + (compareYearSelected ? 1 : 0);
+  
+  // 최소 하나의 시리즈가 항상 보이도록 보장
+  if (visibleCount === 0) {
+    // 선택된 시리즈가 없으면 이전 상태로 되돌림
+    // 차트 옵션을 이전 상태로 다시 설정하여 선택 상태 복원
+    if (mainChartLastLabels.length > 0) {
+      updateChart([...mainChartLastLabels], [...mainChartLastBase], [...mainChartLastCompare]);
+    }
+    // mainChartVisible.value는 변경하지 않음 (이미 이전 값이 유지됨)
+    return;
+  }
+  
+  // 정상적인 경우에만 상태 갱신 (각 연도별로 독립적으로)
+  mainChartVisible.value = {
+    [selectedBaseYear.value]: baseYearSelected,
+    [selectedCompareYear.value]: compareYearSelected
+  };
+  
+  // 차트 option 다시 설정 (labels/data 등은 그대로, visible만 조정)
+  if (mainChartLastLabels.length > 0) {
+    updateChart([...mainChartLastLabels], [...mainChartLastBase], [...mainChartLastCompare]);
+  }
+}
+
 /* ================================
       막대 차트 업데이트
 ================================ */
 function updateChart(labels, baseData, compareData) {
   if (!mainChart) return;
+
+  // 각 연도별로 고유한 이름 보장 (문자열로 명시적 변환)
+  const baseYearName = String(selectedBaseYear.value);
+  const compareYearName = String(selectedCompareYear.value);
+
+  // legend의 selected(등장여부) option을 만들어서 차트에 적용
+  // 각 범례 항목이 독립적으로 작동하도록 명시적으로 설정
+  const legendSelected = {
+    [baseYearName]: mainChartVisible.value[selectedBaseYear.value] !== false,
+    [compareYearName]: mainChartVisible.value[selectedCompareYear.value] !== false,
+  };
 
   const option = {
     tooltip: {
@@ -331,12 +413,14 @@ function updateChart(labels, baseData, compareData) {
       }
     },
     legend: {
-      data: [selectedBaseYear.value, selectedCompareYear.value],
+      data: [baseYearName, compareYearName],
+      selected: legendSelected,
       top: 10,
       right: 20,
       textStyle: {
         color: '#333'
-      }
+      },
+      // ECharts 클릭 이벤트 핸들링 가능: legendselectchanged 사용(mainChart.on에서 등록함)
     },
     grid: {
       left: '3%',
@@ -368,7 +452,7 @@ function updateChart(labels, baseData, compareData) {
     },
     series: [
       {
-        name: selectedBaseYear.value,
+        name: baseYearName,
         type: 'bar',
         data: baseData,
         itemStyle: {
@@ -376,7 +460,7 @@ function updateChart(labels, baseData, compareData) {
         }
       },
       {
-        name: selectedCompareYear.value,
+        name: compareYearName,
         type: 'bar',
         data: compareData,
         itemStyle: {
@@ -386,7 +470,9 @@ function updateChart(labels, baseData, compareData) {
     ]
   };
 
-  mainChart.setOption(option);
+  // 범례 선택 상태를 명시적으로 설정하기 위해 notMerge를 사용
+  // 하지만 범례와 시리즈는 완전히 교체하여 각 항목이 독립적으로 작동하도록 보장
+  mainChart.setOption(option, true);
 }
 
 /* ================================
@@ -408,6 +494,11 @@ async function loadData() {
     const labels = data.monthlyData.map((m) => `${m.month}월`);
     const base = data.monthlyData.map((m) => m.baseYearSaving);
     const compare = data.monthlyData.map((m) => m.compareYearSaving);
+
+    // 메인 차트용 데이터 메모리 (legend 토글 연속사용 가능)
+    mainChartLastLabels = [...labels];
+    mainChartLastBase = [...base];
+    mainChartLastCompare = [...compare];
 
     await nextTick();
     updateChart(labels, base, compare);
@@ -444,12 +535,10 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener("keyup", handleKeyPress);
   window.removeEventListener("resize", resizeChart);
-  mainChart?.dispose();
-});
-
-// 연도 변경 시 차트 업데이트
-watch([selectedBaseYear, selectedCompareYear], () => {
-  loadData();
+  if (mainChart) {
+    mainChart.off("legendselectchanged", onMainChartLegendSelectChanged);
+    mainChart.dispose();
+  }
 });
 </script>
 

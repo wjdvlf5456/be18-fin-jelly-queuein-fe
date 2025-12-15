@@ -1,16 +1,11 @@
 <template>
-  <div
-    class="modal-overlay"
-    v-if="asset && visible"
-    @click.self="close"
+  <Dialog
+    :visible="visible && asset"
+    modal
+    header="예약 상세 조회"
+    :style="{ width: '800px', maxWidth: '90vw' }"
+    @update:visible="close"
   >
-    <div class="modal">
-
-      <!-- 제목 + 닫기 -->
-      <div class="header">
-        <h2>예약 상세 조회</h2>
-        <button class="close-btn" @click="close">✕</button>
-      </div>
 
       <!-- 상세 테이블 -->
       <div class="detail-table">
@@ -67,23 +62,12 @@
 
 
       <!-- 하단 버튼 -->
-      <div class="footer" v-if="actionLabel"   :class="{ 'has-edit': normalizedUsage === 'PENDING' || normalizedUsage === 'APPROVED' }">
-
-        <!-- 수정 버튼: PENDING 또는 APPROVED 상태일 때만 -->
-        <!-- <button
-          v-if="normalizedUsage === 'PENDING' || normalizedUsage === 'APPROVED'"
-          class="footer-btn"
-          @click="onEdit"
-        > 수정
-
-        </button> -->
-        <button
-          class="footer-btn"
+      <div class="footer" v-if="actionLabel">
+        <Button
+          :label="actionLabel"
           :disabled="isActionDisabled"
           @click="onActionClick"
-        >
-          {{ actionLabel }}
-        </button>
+        />
       </div>
 
       <!-- 예약 취소 확인 모달 -->
@@ -94,13 +78,13 @@
         @confirm="onCancelConfirm"
         @cancel="showCancelConfirm = false"
       />
-
-    </div>
-  </div>
+  </Dialog>
 </template>
 
 <script setup>
 import { computed, ref } from "vue"
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const props = defineProps({
@@ -238,40 +222,6 @@ const onAction = () => {
 </script>
 
 <style scoped>
-/* 그대로 유지 */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(2px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.modal {
-  width: 800px;
-  max-width: 90vw;
-  background: #fff;
-  border-radius: 12px;
-  padding: 32px 40px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-}
 
 .detail-table {
   width: 100%;
@@ -304,23 +254,6 @@ const onAction = () => {
   margin-top: 30px;
 }
 
-.footer-btn {
-  padding: 10px 28px;
-  border-radius: 6px;
-  background: #ffffff;
-  border: 1.5px solid #d0d0d0;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.footer-btn:hover {
-  background: #f3f3f3;
-}
-
-.footer-btn:disabled {
-  cursor: not-allowed;
-  background: #eaeaea;
-}
 .footer {
   display: flex;
   justify-content: center;

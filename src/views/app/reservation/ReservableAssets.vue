@@ -1,13 +1,9 @@
 <template>
   <div class="reservable-assets-wrapper">
-    <LoadingSpinner :visible="isLoading" message="예약 가능 자원 목록을 불러오는 중입니다." />
+    <LoadingSpinner :visible="isLoading" message="자원 목록을 불러오는 중입니다." />
 
-    <div class="tabs-full-row">
-      <ReservationTabs />
-    </div>
-
-    <div class="header-row">
-      <h2>예약 가능 자원 조회</h2>
+    <div class="page-header">
+      <h2 class="page-title">자원 목록 조회</h2>
     </div>
 
     <!-- 🔹 ReservationFilters 사용 + @change 핸들러 연결 -->
@@ -29,7 +25,6 @@
 </template>
 
 <script setup>
-import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationTable from '@/components/reservation/ReservableAssetsTable.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -102,8 +97,8 @@ async function fetchReservableAssets() {
       total.value = 0
     }
   } catch (error) {
-    console.error('예약 가능 자원 조회 실패:', error)
-    ElMessage.error('예약 가능 자원을 불러오는데 실패했습니다.')
+    console.error('자원 목록 조회 실패:', error)
+    ElMessage.error('자원 목록을 불러오는데 실패했습니다.')
     tableData.value = []
     total.value = 0
   } finally {
@@ -150,23 +145,44 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.header-row {
+.reservable-assets-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.header-row h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
   margin: 0;
 }
+</style>
 
-.tabs-full-row {
-  margin-bottom: 0;
+<style>
+/* 필터와 테이블이 화면 전체 너비를 차지하도록 */
+.reservable-assets-wrapper :deep(.filters) {
+  margin-left: calc(-32px);
+  margin-right: calc(-32px);
+  padding-left: 32px;
+  padding-right: 32px;
+  width: calc(100% + 64px);
+}
+
+.reservable-assets-wrapper :deep(.table-wrapper) {
+  margin-left: calc(-32px);
+  margin-right: calc(-32px);
+  padding-left: 32px;
+  padding-right: 32px;
+  width: calc(100% + 64px);
 }
 </style>

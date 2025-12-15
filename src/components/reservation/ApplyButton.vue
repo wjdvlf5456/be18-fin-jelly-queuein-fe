@@ -1,18 +1,17 @@
 <template>
   <div class="apply-wrapper">
-    <button class="apply-btn" @click="goSchedule">
-      신청하기
+    <button class="apply-btn" @click="handleClick">
+      <slot>신청하기</slot>
     </button>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+const emit = defineEmits(['click'])
 
-const router = useRouter()
-
-const goSchedule = () => {
-  router.push('/app/reservations/me')
+const handleClick = (event) => {
+  event.stopPropagation()
+  emit('click', event)
 }
 </script>
 

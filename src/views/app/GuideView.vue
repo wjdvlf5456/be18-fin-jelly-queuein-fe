@@ -233,7 +233,7 @@ onMounted(() => {
                   <h3>3. 예약 정보 입력</h3>
                   <ul>
                     <li><strong>날짜</strong>: 예약하고 싶은 날짜를 선택합니다.</li>
-                    <li><strong>시간</strong>: 시작 시간과 종료 시간을 선택합니다.</li>
+                    <li><strong>시간</strong>: 시작 시각과 종료 시각을 선택합니다.</li>
                     <li><strong>사용 목적</strong>: 예약 목적을 입력합니다 (선택사항).</li>
                   </ul>
 
@@ -242,7 +242,7 @@ onMounted(() => {
 
                   <div class="tip-box">
                     <i class="pi pi-info-circle"></i>
-                    <strong>팁:</strong> 즉시 승인이 필요한 경우, 관리자에게 직접 연락하거나 즉시
+                    <strong>tip:</strong> 즉시 승인이 필요한 경우, 관리자에게 직접 연락하거나 즉시
                     승인 예약 기능을 사용하세요.
                   </div>
                 </div>
@@ -364,7 +364,7 @@ onMounted(() => {
 
                   <div class="tip-box">
                     <i class="pi pi-info-circle"></i>
-                    <strong>팁:</strong> 캘린더의 예약 이벤트를 클릭하면 예약 상세 정보를 확인할 수
+                    <strong>tip:</strong> 캘린더의 예약 이벤트를 클릭하면 예약 상세 정보를 확인할 수
                     있습니다.
                   </div>
                 </div>

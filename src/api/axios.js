@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { showPermissionError } from '@/utils/toast'
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
@@ -46,13 +47,10 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // 403
+    // 403 - 권한 오류 처리
     if (error.response && error.response.status === 403) {
-      // 1) 모달 메시지
-      ElMessage.error('접근 권한이 없습니다.')
-
-      // 2) 403 페이지로 이동
-      window.location.href = '/403'
+      // PrimeVue Toast로 권한 오류 메시지 표시 (리다이렉트 없음)
+      showPermissionError()
       return Promise.reject(error)
     }
 

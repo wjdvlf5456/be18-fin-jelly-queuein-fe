@@ -1,16 +1,9 @@
-<script setup lang="ts">
+<script setup>
 import { ref, computed, watch } from 'vue'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
 import api from '@/api/axios'
-
-// ------------------
-// 타입 정의 (백엔드 DTO 기반)
-// ------------------
-interface User {
-  userId: number
-  userName: string
-  email: string
-  avatarUrl?: string
-}
 
 // ------------------
 // Props & Emits
@@ -20,23 +13,20 @@ const props = defineProps({
   width: { type: String, default: '360px' }
 })
 
-const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'select', users: User[]): void
-}>()
+const emit = defineEmits(['close', 'select'])
 
 // ------------------
 // 상태
 // ------------------
-const users = ref<User[]>([])     // 🔹 검색 결과
+const users = ref([])     // 🔹 검색 결과
 const keyword = ref('')
-const selectedIds = ref<number[]>([])  // 선택된 유저 ID들
-const selectedUserObjects = ref<User[]>([])
+const selectedIds = ref([])  // 선택된 유저 ID들
+const selectedUserObjects = ref([])
 
 // ------------------
 // Debounce + API 호출
 // ------------------
-let timer: any = null
+let timer = null
 
 watch(keyword, (val) => {
   if (timer) clearTimeout(timer)
@@ -47,7 +37,7 @@ watch(keyword, (val) => {
 })
 
 // 검색 결과가 들어와도 기존 선택 유지
-const fetchUsers = async (keyword: string) => {
+const fetchUsers = async (keyword) => {
   if (!keyword) {
     users.value = []
     return
@@ -82,7 +72,7 @@ const filteredUsers = computed(() => {
 // ------------------
 // 선택 토글
 // ------------------
-const toggleSelect = (user: User) => {
+const toggleSelect = (user) => {
   const idx = selectedIds.value.indexOf(user.userId)
 
   if (idx === -1) {
@@ -109,23 +99,21 @@ const submitSelection = () => {
 </script>
 
 <template>
-  <div v-if="show" class="overlay" @click.self="emit('close')">
-    <div class="modal" :style="{ width }">
-      <h3 class="title">참여자 선택</h3>
+  <Dialog
+    :visible="show"
+    modal
+    header="참여자 선택"
+    :style="{ width: width || '360px' }"
+    @update:visible="emit('close')"
+  >
 
       <!-- 검색창 -->
       <div class="search-box">
-        <input
+        <InputText
           v-model="keyword"
-          type="text"
           placeholder="사용자명을 입력해주세요"
           class="search-input"
         />
-        <svg class="search-icon" fill="none" viewBox="0 0 24 24">
-          <path stroke="currentColor" stroke-width="2"
-            d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-          />
-        </svg>
       </div>
 
       <!-- 사용자 목록 -->
@@ -150,36 +138,24 @@ const submitSelection = () => {
       <div v-else class="empty">검색 결과가 없습니다.</div>
 
       <!-- 선택 완료 버튼 -->
-      <button class="submit-btn" @click="submitSelection" :disabled="!selectedIds.length">
-        선택 완료
-      </button>
-    </div>
-  </div>
+      <div style="margin-top: 12px;">
+        <Button
+          label="선택 완료"
+          @click="submitSelection"
+          :disabled="!selectedIds.length"
+          style="width: 100%"
+        />
+      </div>
+  </Dialog>
 </template>
 
 <style scoped>
-.overlay { 
-  position: fixed; inset:0; 
-  display:flex; justify-content:center; align-items:center; 
-  background:rgba(0,0,0,0.35); 
-  z-index:9999; 
+.search-box {
+  margin-bottom: 12px;
 }
-.modal { 
-  background:#fff; padding:24px; border-radius:12px; 
-  width:360px; 
-}
-.title { 
-  font-weight:700; font-size:18px; margin-bottom:16px; 
-}
-.search-box { position: relative; margin-bottom:12px; }
-.search-input { 
-  width:100%; padding:8px 36px 8px 12px; 
-  border-radius:6px; border:1px solid #ccc; font-size:14px; 
-}
-.search-icon { 
-  position: absolute; right: 10px; top: 50%; 
-  transform: translateY(-50%); 
-  width: 18px; height: 18px; color: #aaa; 
+
+.search-input {
+  width: 100%;
 }
 .list { max-height:300px; overflow-y:auto; margin-bottom:12px; }
 .item { 
@@ -198,11 +174,5 @@ const submitSelection = () => {
 .info { margin-left:10px; flex:1; }
 .name { font-weight:600; font-size:14px; }
 .email { font-size:12px; color:#666; }
-.submit-btn { 
-  width:100%; padding:10px; border-radius:8px; 
-  background:#abdfb0; color:#fff; font-weight:600; 
-  cursor:pointer; 
-}
-.submit-btn:disabled { background:#ccc; cursor:not-allowed; }
 .empty { text-align:center; color:#999; padding:20px 0; }
 </style>

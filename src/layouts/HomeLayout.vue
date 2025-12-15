@@ -7,6 +7,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 
 import AccountingTabs from '@/components/accounting/AccountingTabMenu.vue'
+import ReservationTabs from '@/components/reservation/ReservationTab.vue'
 import ChatWidget from '@/components/chat/ChatWidget.vue'
 
 /* ---------------------------
@@ -19,6 +20,7 @@ const currentTabType = computed(() => {
 
   if (path.startsWith('/app/reservations/monthly')) return null
   if (path.startsWith('/app/reservations')) return 'reservation'
+  if (path.startsWith('/admin/reservations/applied')) return 'reservation'
   if (path.startsWith('/admin/accounting')) return 'accounting'
 
   return null
@@ -120,6 +122,9 @@ function onTransitionEnter() {
     <div v-if="currentTabType === 'accounting'" class="tab-wrapper">
       <AccountingTabs />
     </div>
+    <div v-if="currentTabType === 'reservation'" class="tab-wrapper">
+      <ReservationTabs />
+    </div>
 
     <!-- 메인 컨텐츠 -->
     <main class="content">
@@ -151,9 +156,6 @@ function onTransitionEnter() {
 
   /* 모든 padding 제거 → 탭이 상단에 딱 붙음 */
   padding: 0;
-
-  /* 정산 탭처럼 탭만 표시되도록 */
-  border-bottom: 1px solid #e5e7eb;
 
   /* 화면 꽉 차게 */
   width: 100%;
