@@ -53,7 +53,7 @@
       </div>
       <!-- 사용 증가율 (더 크게) -->
       <div class="bottom-chart-card large">
-        <h3 class="chart-title">사용 증가율 ({{ selectedBaseYear }}년 vs {{ selectedCompareYear }}년)</h3>
+        <h3 class="chart-title">사용 증감률 ({{ selectedBaseYear }}년 vs {{ selectedCompareYear }}년)</h3>
         <div ref="increaseRateChartRef" class="bottom-chart-container large"></div>
       </div>
     </div>
@@ -497,7 +497,7 @@ function updateIncreaseRateChart(rate) {
               )
             : '0'
           // '증가율' 세그먼트는 실제 증가율 값을 보여준다 (+/- 등)
-          return `증가율: ${displayValue}%`
+          return `증감률: ${displayValue}%`
         }
         // 기타는 아무 반응도 없게! (반응형, 툴팁 모두 제거)
         return ''
@@ -505,7 +505,7 @@ function updateIncreaseRateChart(rate) {
     },
     series: [
       {
-        name: '사용 증가율',
+        name: '사용 증감률',
         type: 'pie',
         radius: ['45%', '75%'],
         center: ['50%', '50%'],

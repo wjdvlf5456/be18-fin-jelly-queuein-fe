@@ -17,6 +17,8 @@
     <!-- 회계 메뉴 탭 (항상 헤더 밑에 위치) -->
     <AccountingTabMenu v-if="isAccountingPage" />
 
+    <ReservationTabMenu v-if="isReservationPage" />
+
     <!-- 메인 컨텐츠 -->
     <main class="content">
       <RouterView v-slot="{ Component }">
@@ -41,7 +43,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 // import AppFooter from '@/components/layout/AppFooter.vue'
 import AccountingTabMenu from '@/components/accounting/AccountingTabMenu.vue'
 import ChatWidget from '@/components/chat/ChatWidget.vue'
-
+import ReservationTabMenu from '@/components/reservation/ReservationTab.vue'
 const route = useRoute()
 
 /* ✔ 경로가 /admin/accounting/** 일 때만 탭 메뉴 표시 */
@@ -51,6 +53,11 @@ const isAccountingPage = computed(() => route.path.startsWith('/admin/accounting
 const isFixedOpen = ref(false)
 const isHoverOpen = ref(false)
 const isSidebarOpen = computed(() => isFixedOpen.value || isHoverOpen.value)
+/* ✔ 경로가 /admin/reservations/** 일 때만 예약 탭 표시 */
+const isReservationPage = computed(() =>
+  route.path.startsWith('/admin/reservations'),
+)
+
 
 function toggleSidebar() {
   isFixedOpen.value = !isFixedOpen.value

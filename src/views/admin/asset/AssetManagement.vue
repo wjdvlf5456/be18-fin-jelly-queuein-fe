@@ -577,14 +577,14 @@ function goAssetDetail(event) {
 }
 
 :deep(.custom-header) {
-  background: #8ba3f5;
+  background: #22c55e; /* green-500 */
   color: white;
   font-weight: 600;
   padding: 16px;
 }
 
 :deep(.custom-thead th) {
-  background: #8ba3f5;
+  background: #22c55e; /* green-500 */
   color: white;
   font-weight: 600;
   padding: 16px 12px;
@@ -594,7 +594,7 @@ function goAssetDetail(event) {
 }
 
 :deep(.custom-thead th:hover) {
-  background: #7c94f0;
+  background: #16a34a; /* green-600 */
 }
 
 :deep(.custom-tbody tr) {
