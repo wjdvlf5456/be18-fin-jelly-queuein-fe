@@ -8,7 +8,7 @@
     <!-- 자원 예약 정보 -->
     <h2>자원 예약</h2>
     <BookingHeader
-      :assetName="assetInfo?.assetName || assetName"
+      :assetName="assetName"
       v-model:date="date"
       v-model:note="note"
       :reserver="currentUserName"
@@ -17,16 +17,10 @@
       @add="openParticipantModal"
     />
 
-
-
-
     <!-- 예약 시간 선택 -->
     <div class="time-section">
       <h2>예약 시간 선택</h2>
-      <TimeBar
-        :blocks="timeBlocks"
-        v-model="selectedHours"
-      />
+      <TimeBar :blocks="timeBlocks" v-model="selectedHours" />
     </div>
 
     <!-- 선택된 참여자 표시
@@ -45,43 +39,41 @@
     />
 
     <!-- 예약 신청 버튼 -->
-    <ApplyButton @click="submitBooking" />
+    <div class="button-group">
+      <button class="reset-btn" @click="resetForm">초기화</button>
+      <button class="apply-btn" @click="submitBooking">신청하기</button>
+    </div>
   </div>
 </template>
-<script setup lang="ts">
+<script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { useToast } from 'primevue/usetoast'
 import api from '@/api/axios'
 
 import TimeBar from '@/components/reservation/TimeBar.vue'
 import BookingHeader from '@/components/reservation/BookingHeader.vue'
 import ParticipantModal from '@/components/reservation/ParticipantModal.vue'
-import ApplyButton from '@/components/reservation/ApplyButton.vue'
 import { reservationApi } from '@/api/reservationApi'
 
 const router = useRouter()
-
 const route = useRoute()
+const toast = useToast()
 
 // 목록 페이지에서 전달한 assetId와 date → params 로 변경!
 const assetId = Number(route.query.assetId)
 
-const selectedDate = ref(route.query.date)
-const assetName = route.query.assetName?.toString() ?? ""
-
-// 자원 정보
-const assetInfo = ref<any>(null)
+const assetName = route.query.assetName?.toString() ?? ''
 
 // 예약 가능 시간
-const timeBlocks = ref<any[]>([])
-const selectedHours = ref<number[]>([])
-console.log("route.query.date =", route.query.date)
+const timeBlocks = ref([])
+const selectedHours = ref([])
+console.log('route.query.date =', route.query.date)
 
 // 참여자
 const participantModalVisible = ref(false)
-const selectedUsers = ref<{ id: number; name: string }[]>([])
-const note = ref("")
+const selectedUsers = ref([])
+const note = ref('')
 
 // -------------------------------
 //  예약 가능 시간 조회 API
@@ -89,19 +81,17 @@ const note = ref("")
 const today = new Date().toLocaleDateString('en-CA')
 
 const rawDate = route.query.date
-const initialDate =
-  Array.isArray(rawDate) ? rawDate[0] : rawDate
+const initialDate = Array.isArray(rawDate) ? rawDate[0] : rawDate
 
 const date = ref(initialDate || today)
 const onSelectParticipants = (users) => {
-  selectedUsers.value = users.map(u => ({
-    id: u.userId,         // 서버로 보낼 값
-    name: u.userName      // 화면에 보여줄 값
+  selectedUsers.value = users.map((u) => ({
+    id: u.userId, // 서버로 보낼 값
+    name: u.userName, // 화면에 보여줄 값
   }))
 }
 // console.log("받은 값:", users);
 // console.log("저장 직전:", users.map(u => ({ id: u.userId, name: u.userName })));
-
 
 function convertToTimeBlocks(apiData) {
   try {
@@ -111,7 +101,7 @@ function convertToTimeBlocks(apiData) {
     }
 
     const blocks = []
-    const availableHours = new Set<number>()
+    const availableHours = new Set()
 
     apiData.timeSlots.forEach((slot) => {
       try {
@@ -185,7 +175,12 @@ const fetchAvailableTimes = async () => {
     }
   } catch (error) {
     console.error('예약 가능 시간 조회 실패:', error)
-    ElMessage.error('예약 가능 시간을 불러오는데 실패했습니다.')
+    toast.add({
+      severity: 'error',
+      summary: '오류',
+      detail: '예약 가능 시간을 불러오는데 실패했습니다.',
+      life: 3000,
+    })
     timeBlocks.value = []
   }
 }
@@ -200,7 +195,6 @@ watch(
   },
 )
 
-
 // -------------------------------
 // 선택 시간 → 시간 문자열로 변환
 // -------------------------------
@@ -209,41 +203,73 @@ const timeRange = computed(() => {
   const start = Math.min(...selectedHours.value)
   const end = Math.max(...selectedHours.value) + 1
 
-  return `${String(start).padStart(2,'0')}:00 ~ ${String(end).padStart(2,'0')}:00`
+  return `${String(start).padStart(2, '0')}:00 ~ ${String(end).padStart(2, '0')}:00`
 })
 
 // 모달
-const openParticipantModal = () => participantModalVisible.value = true
+const openParticipantModal = () => (participantModalVisible.value = true)
 
+// 초기화 함수
+const resetForm = () => {
+  selectedHours.value = []
+  selectedUsers.value = []
+  note.value = ''
+  toast.add({
+    severity: 'info',
+    summary: '알림',
+    detail: '입력 내용이 초기화되었습니다.',
+    life: 3000,
+  })
+}
 
 function toUtcIso(date, hour) {
-  const local = new Date(`${date}T${String(hour).padStart(2, "0")}:00:00+09:00`);
-  return local.toISOString();
+  const local = new Date(`${date}T${String(hour).padStart(2, '0')}:00:00+09:00`)
+  return local.toISOString()
 }
 
 // -------------------------------
 // 예약 수정 API
 // -------------------------------
-async function submitBooking() {
+async function submitBooking(event) {
+  if (event) {
+    event.stopPropagation()
+    event.preventDefault()
+  }
+
   try {
     // 유효성 검사
     if (!selectedHours.value.length) {
-      ElMessage.warning('예약 시간을 선택해주세요.')
+      toast.add({
+        severity: 'warn',
+        summary: '경고',
+        detail: '예약 시간을 선택해주세요.',
+        life: 3000,
+      })
       return
     }
 
     if (!currentUserId.value) {
-      ElMessage.error('사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해주세요.')
+      toast.add({
+        severity: 'error',
+        summary: '오류',
+        detail: '사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해주세요.',
+        life: 3000,
+      })
       return
     }
 
     if (!assetId || isNaN(assetId)) {
-      ElMessage.error('자원 정보가 올바르지 않습니다.')
+      toast.add({
+        severity: 'error',
+        summary: '오류',
+        detail: '자원 정보가 올바르지 않습니다.',
+        life: 3000,
+      })
       return
     }
 
     if (!date.value) {
-      ElMessage.error('날짜를 선택해주세요.')
+      toast.add({ severity: 'error', summary: '오류', detail: '날짜를 선택해주세요.', life: 3000 })
       return
     }
 
@@ -256,7 +282,12 @@ async function submitBooking() {
     if (endHourRaw === 24) {
       const [y, m, d] = date.value.split('-').map(Number)
       if (isNaN(y) || isNaN(m) || isNaN(d)) {
-        ElMessage.error('날짜 형식이 올바르지 않습니다.')
+        toast.add({
+          severity: 'error',
+          summary: '오류',
+          detail: '날짜 형식이 올바르지 않습니다.',
+          life: 3000,
+        })
         return
       }
       const nextDay = new Date(Date.UTC(y, m - 1, d + 1))
@@ -270,7 +301,12 @@ async function submitBooking() {
 
     // 시간 유효성 검사
     if (!startAt || !endAt) {
-      ElMessage.error('예약 시간을 계산하는 중 오류가 발생했습니다.')
+      toast.add({
+        severity: 'error',
+        summary: '오류',
+        detail: '예약 시간을 계산하는 중 오류가 발생했습니다.',
+        life: 3000,
+      })
       return
     }
 
@@ -286,7 +322,12 @@ async function submitBooking() {
 
     await api.post(`/reservations/${assetId}/instant-confirm`, payload)
 
-    ElMessage.success('예약이 수정되었습니다.')
+    toast.add({
+      severity: 'success',
+      summary: '성공',
+      detail: '예약이 수정되었습니다.',
+      life: 3000,
+    })
     router.push('/app/reservations/me')
   } catch (error) {
     console.error('예약 수정 실패:', error)
@@ -312,10 +353,10 @@ async function submitBooking() {
       errorMessage = '서버와 연결할 수 없습니다. 네트워크를 확인해주세요.'
     }
 
-    ElMessage.error(errorMessage)
+    toast.add({ severity: 'error', summary: '오류', detail: errorMessage, life: 3000 })
   }
 }
-const currentUserName = ref("")
+const currentUserName = ref('')
 const currentUserId = ref(null)
 onMounted(async () => {
   try {
@@ -325,11 +366,21 @@ onMounted(async () => {
       currentUserName.value = res.data.userName
     } else {
       console.error('사용자 정보 응답 형식이 올바르지 않습니다.')
-      ElMessage.error('사용자 정보를 불러올 수 없습니다.')
+      toast.add({
+        severity: 'error',
+        summary: '오류',
+        detail: '사용자 정보를 불러올 수 없습니다.',
+        life: 3000,
+      })
     }
   } catch (e) {
     console.error('유저 정보 조회 실패', e)
-    ElMessage.error('사용자 정보를 불러오는데 실패했습니다.')
+    toast.add({
+      severity: 'error',
+      summary: '오류',
+      detail: '사용자 정보를 불러오는데 실패했습니다.',
+      life: 3000,
+    })
   }
 
   try {
@@ -339,12 +390,9 @@ onMounted(async () => {
   }
 })
 
-
-
 // -------------------------------
 // 페이지 로딩 시 API 호출
 // -------------------------------
-
 </script>
 
 <style scoped>
@@ -375,5 +423,45 @@ onMounted(async () => {
   margin-right: 6px;
   border-radius: 8px;
   font-size: 13px;
+}
+
+.button-group {
+  margin-top: 40px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.reset-btn,
+.apply-btn {
+  padding: 10px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.5px solid #dcdcdc;
+}
+
+.reset-btn {
+  background: #ffffff;
+  color: #444;
+}
+
+.reset-btn:hover {
+  background: #f6f6f6;
+}
+
+.apply-btn {
+  background: #00a950;
+  color: #ffffff;
+  border-color: #00a950;
+}
+
+.apply-btn:hover {
+  background: #009045;
+}
+
+.apply-btn:active {
+  background: #007a3a;
 }
 </style>

@@ -29,6 +29,17 @@ function isActiveExact(path) {
 function isActiveStartsWith(basePath) {
   return route.path === basePath || route.path.startsWith(basePath + '/')
 }
+
+// 예약 관리 메뉴 활성화 조건 (예약 현황, 예약 가능 자원 목록, 예약 관리 모두 포함)
+const isReservationActive = computed(() => {
+  return (
+    isActiveStartsWith('/app/reservations/me') ||
+    route.path === '/app/reservations/available-assets' ||
+    route.path.startsWith('/app/reservations/available-assets') ||
+    route.path === '/admin/reservations/applied' ||
+    route.path.startsWith('/admin/reservations/applied')
+  )
+})
 </script>
 
 
@@ -42,7 +53,7 @@ function isActiveStartsWith(basePath) {
       <router-link
         to="/app/reservations/me"
         class="item"
-        :class="{ active: isActiveStartsWith('/app/reservations/me') }"
+        :class="{ active: isReservationActive }"
         @click="$emit('close-sidebar')"
       >
         <img :src="reserveIcon" class="icon" />

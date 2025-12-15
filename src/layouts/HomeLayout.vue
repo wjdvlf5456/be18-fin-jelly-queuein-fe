@@ -20,6 +20,7 @@ const currentTabType = computed(() => {
 
   if (path.startsWith('/app/reservations/monthly')) return null
   if (path.startsWith('/app/reservations')) return 'reservation'
+  if (path.startsWith('/admin/reservations/applied')) return 'reservation'
   if (path.startsWith('/admin/accounting')) return 'accounting'
 
   return null

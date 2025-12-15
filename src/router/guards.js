@@ -1,4 +1,5 @@
 import { hasRole } from '@/utils/role'
+import { showPermissionError } from '@/utils/toast'
 
 export function setupGuards(router) {
   router.beforeEach((to, from, next) => {
@@ -30,12 +31,14 @@ export function setupGuards(router) {
     if (to.meta.minRole) {
       // meta에 명시된 권한 체크
       if (!hasRole(to.meta.minRole)) {
-        return next('/403')
+        showPermissionError()
+        return next(false) // 현재 페이지에 머물기
       }
     } else if (to.path.startsWith('/admin')) {
       // meta.minRole이 없고 /admin 경로면 ADMIN 권한 필요
       if (!hasRole('ADMIN')) {
-        return next('/403')
+        showPermissionError()
+        return next(false) // 현재 페이지에 머물기
       }
     }
 

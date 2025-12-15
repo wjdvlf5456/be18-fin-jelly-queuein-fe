@@ -21,8 +21,8 @@
         <el-table-column type="selection" width="48" />
 
         <!-- 기본 컬럼들 -->
-        <el-table-column prop="assetName" label="자원명" width="130" align="center" />
-        <el-table-column prop="assetType" label="자원 유형" width="110" align="center" />
+        <el-table-column prop="assetName" label="자원명" min-width="200" align="center" />
+        <el-table-column prop="assetType" label="자원 유형" min-width="150" align="center" />
         <el-table-column prop="categoryName" label="카테고리" width="110" align="center" />
 
         <!-- 자원 상태 -->
@@ -39,15 +39,15 @@
           </template>
         </el-table-column>
 
-        <!-- 예약 시간 -->
-        <el-table-column label="예약 시작/종료 시간" width="200" align="center">
+        <!-- 예약 시각 -->
+        <el-table-column label="예약 시작/종료 시각" width="200" align="center">
           <template #default="{ row }">
             {{ formatTime(row.startAt) }} ~ {{ formatTime(row.endAt) }}
           </template>
         </el-table-column>
 
-        <!-- 실제 시간 -->
-        <el-table-column label="실제 시작/종료 시간" width="200" align="center">
+        <!-- 실제 시각 -->
+        <el-table-column label="실제 시작/종료 시각" width="200" align="center">
           <template #default="{ row }">
             <span v-if="row.actualStartAt">
               {{ formatTime(row.actualStartAt) }} ~ {{ formatTime(row.actualEndAt) }}
@@ -57,7 +57,7 @@
         </el-table-column>
 
         <!-- 예약 상태 -->
-        <el-table-column label="예약 상태" min-width="150" align="center">
+        <el-table-column label="예약 상태" width="120" align="center">
           <template #default="{ row }">
             <StatusTag :status="row.reservationStatus" />
           </template>

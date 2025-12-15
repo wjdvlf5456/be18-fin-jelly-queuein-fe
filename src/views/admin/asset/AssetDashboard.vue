@@ -26,6 +26,25 @@
       </div>
     </div>
 
+    <!-- 선택된 자원 정보 및 상세 조회 버튼 -->
+    <div v-if="selectedAsset" class="selected-asset-info">
+      <div class="asset-info-content">
+        <div class="asset-name">
+          <i class="ri-file-line"></i>
+          <span>{{ selectedAsset.name }}</span>
+        </div>
+        <div class="asset-actions">
+          <button class="detail-btn" @click="goToDetail">
+            <i class="ri-eye-line"></i>
+            상세 조회
+          </button>
+          <button class="close-btn" @click="clearSelection">
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 새로고침 버튼 -->
     <div class="dashboard-actions">
       <button class="refresh-btn" @click="loadData" :disabled="isLoading">
@@ -38,8 +57,11 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { assetApi } from '@/api/assetApi'
 import * as echarts from 'echarts'
+
+const router = useRouter()
 
 // 차트 타입 정의
 const chartTypes = [
@@ -52,6 +74,7 @@ const chartContainerRef = ref(null)
 let chartInstance = null
 const isLoading = ref(false)
 const treeData = ref([])
+const selectedAsset = ref(null)
 
 // 차트 타입 선택
 function selectChartType(type) {
@@ -485,13 +508,31 @@ function setupChartEvents() {
 
   chartInstance.off('click')
   chartInstance.on('click', function(params) {
-    // 차트 클릭 시 자원 상세 페이지로 이동
+    // 차트 클릭 시 자원 선택 (리다이렉트하지 않음)
     if (params.data && params.data.assetId) {
-      setTimeout(() => {
-        window.location.href = `/admin/assets/${params.data.assetId}`
-      }, 0)
+      selectAsset(params.data)
     }
   })
+}
+
+// 자원 선택
+function selectAsset(assetData) {
+  selectedAsset.value = {
+    assetId: assetData.assetId,
+    name: assetData.name || '이름 없음'
+  }
+}
+
+// 선택 해제
+function clearSelection() {
+  selectedAsset.value = null
+}
+
+// 상세 조회 페이지로 이동
+function goToDetail() {
+  if (selectedAsset.value && selectedAsset.value.assetId) {
+    router.push(`/admin/assets/${selectedAsset.value.assetId}`)
+  }
 }
 
 watch(selectedChartType, () => {
@@ -642,5 +683,102 @@ onBeforeUnmount(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.selected-asset-info {
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 16px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #00A950;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.asset-info-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.asset-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.asset-name i {
+  font-size: 20px;
+  color: #00A950;
+}
+
+.asset-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #00A950;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.detail-btn:hover {
+  background: #009045;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 169, 80, 0.3);
+}
+
+.detail-btn i {
+  font-size: 16px;
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.close-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.close-btn i {
+  font-size: 18px;
 }
 </style>

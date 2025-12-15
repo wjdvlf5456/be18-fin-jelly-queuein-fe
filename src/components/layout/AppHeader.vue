@@ -2,6 +2,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { authApi } from '@/api/authApi'
+import { userApi } from '@/api/iam/userApi'
 import { hasRole } from '@/utils/role'
 import NotificationDropdown from '@/components/notification/NotificationDropdown.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -203,8 +204,22 @@ function handleClickOutside(event) {
   }
 }
 
+// 사용자 프로필 이미지 로드
+async function loadUserProfile() {
+  try {
+    const res = await userApi.getMe()
+    if (res?.data?.profileImageUrl) {
+      profileImageUrl.value = res.data.profileImageUrl
+    }
+  } catch (error) {
+    console.warn('프로필 이미지 로드 실패:', error)
+    // 프로필 이미지 로드 실패해도 계속 진행
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  loadUserProfile()
 })
 
 onBeforeUnmount(() => {
@@ -218,6 +233,7 @@ onBeforeUnmount(() => {
 // ===============================
 const role = localStorage.getItem('role') || ''
 const name = (localStorage.getItem('userName') || '').trim()
+const profileImageUrl = ref(null)
 
 // ===============================
 // 🧑 이름 우선 표시 + 역할 보조 처리
@@ -569,7 +585,10 @@ const breadcrumbItems = computed(() => {
       <NotificationDropdown />
 
       <div class="profile" @click="goMyPage" style="cursor: pointer">
-        <div class="avatar">{{ avatarText }}</div>
+        <div class="avatar">
+          <img v-if="profileImageUrl" :src="profileImageUrl" alt="프로필 이미지" class="avatar-image" />
+          <span v-else>{{ avatarText }}</span>
+        </div>
         <div class="profile-info">
           <span class="profile-name">{{ roleText }}</span>
           <span class="profile-role">{{ currentRoleText }}</span>
@@ -819,6 +838,15 @@ const breadcrumbItems = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .logout {

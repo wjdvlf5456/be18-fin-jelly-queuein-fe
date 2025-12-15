@@ -1,16 +1,11 @@
 <template>
-  <div 
-    class="modal-overlay" 
-    v-if="asset && visible"
-    @click.self="close"
+  <Dialog
+    :visible="visible && asset"
+    modal
+    header="예약 상세 조회"
+    :style="{ width: '800px', maxWidth: '90vw' }"
+    @update:visible="close"
   >
-    <div class="modal">
-
-      <!-- 제목 + 닫기 -->
-      <div class="header">
-        <h2>예약 상세 조회</h2>
-        <button class="close-btn" @click="close">✕</button>
-      </div>
 
       <!-- 상세 테이블 -->
       <div class="detail-table">
@@ -57,9 +52,8 @@
         <div class="row">
           <div class="label green">승인 / 거절 사유</div>
           <div class="value">
-            <el-input 
+            <Textarea 
               v-model="editedReason"
-              type="textarea"
               rows="3"
               placeholder="사유를 입력하세요"
               class="reason-textarea"
@@ -74,17 +68,18 @@
 
       </div>
 
-      <div style="margin-top: 20px; text-align: right;">
-      <el-button type="success" @click="approve">승인</el-button>
-      <el-button type="danger" @click="reject">거절</el-button>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 8px;">
+        <Button label="승인" severity="success" @click="approve" />
+        <Button label="거절" severity="danger" @click="reject" />
       </div>
-
-    </div>
-  </div>
+  </Dialog>
 </template>
 
 <script setup>
 import { ref, watch, computed } from "vue"
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Textarea from 'primevue/textarea'
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc"
 import timezone from "dayjs/plugin/timezone"
@@ -181,34 +176,6 @@ const participantsText = computed(() => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-.modal {
-  width: 800px;
-  background: #fff;
-  border-radius: 6px;
-  padding: 30px 40px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-}
 .detail-table {
   width: 100%;
 }
@@ -229,18 +196,11 @@ const participantsText = computed(() => {
   padding: 14px;
   background: #fafafa;
 }
-/* 텍스트 영역 테두리 제거 + 배경만 유지 */
-.reason-textarea ::v-deep(.el-textarea__inner) {
+.reason-textarea {
+  width: 100%;
   border: none !important;
-  box-shadow: none !important;
   background: #fafafa !important;
-  resize: none; /* 원하면 제거 가능 */
-  padding: 10px 12px;
-  min-height: 80px;
-}
-
-.reason-textarea ::v-deep(.el-textarea__inner) {
-  color: #333 !important; /* 글자가 보이도록 */
+  resize: none;
 }
 
 </style>

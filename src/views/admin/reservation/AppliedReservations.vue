@@ -1,6 +1,9 @@
 <template>
   <div class="applied-reservations-wrapper">
     <div>
+      <!-- 탭 네비게이션 -->
+      <ReservationTab />
+
       <!-- 헤더 -->
       <div class="header-row">
         <h2>예약 관리</h2>
@@ -38,6 +41,7 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '@/api/axios'
 
+import ReservationTab from '@/components/reservation/ReservationTab.vue'
 import ReservationFilters from '@/components/reservation/ReservationFilter.vue'
 import ReservationTable from '@/components/reservation/AppliedReservationTable.vue'
 import ReservationDetailModal from '@/components/reservation/ReservationApplyDetailModal.vue'

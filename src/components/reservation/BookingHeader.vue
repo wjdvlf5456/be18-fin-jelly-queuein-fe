@@ -11,16 +11,15 @@
       <div class="info-value">{{ assetName }}</div>
 
       <div class="info-label">예약 날짜</div>
-
-      <!-- 숨겨진 date-picker -->
-      <el-date-picker
-        ref="datePickerRef"
-        v-model="internalDate"
-        type="date"
-        value-format="YYYY-MM-DD"
-        class="hidden-date-picker"
-        @change="onDateChange"
-      />
+      <div class="info-value date-picker-wrapper">
+        <Calendar
+          v-model="internalDate"
+          dateFormat="yy-mm-dd"
+          :showIcon="true"
+          inputId="reservation-date"
+          @date-select="onDateChange"
+        />
+      </div>
 
       <div class="info-label">예약자</div>
       <div class="info-value">{{ reserver }}</div>
@@ -35,15 +34,20 @@
     <div class="line-row">
       <div class="line-label">참여자</div>
       <div class="line-content">
-        <el-button type="success" circle @click="onAdd">+</el-button>
-          <span 
-            v-for="user in participants" 
-            :key="user.userId"
-            class="tag"
-            @click="onRemove(user)"
-          >
-            {{ user.name }}
-          </span>
+        <Button
+          icon="pi pi-plus"
+          rounded
+          severity="success"
+          @click="onAdd"
+        />
+        <span 
+          v-for="user in participants" 
+          :key="user.userId || user.id"
+          class="tag"
+          @click="onRemove(user)"
+        >
+          {{ user.name }}
+        </span>
 
 
 
@@ -55,9 +59,7 @@
     <div class="line-row">
       <div class="line-label">비고</div>
       <div class="line-content">
-        <el-input
-          class="note-textarea"
-          type="textarea"
+        <Textarea
           v-model="internalNote"
           placeholder="비고를 입력하세요"
           rows="2"
@@ -70,7 +72,10 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed } from "vue"
+import Calendar from 'primevue/calendar'
+import Button from 'primevue/button'
+import Textarea from 'primevue/textarea'
 
 // const props = defineProps({
 //   assetName: String,
@@ -100,19 +105,30 @@ const props = defineProps({
 
 const emit = defineEmits(["add", "update:date", "update:note", "remove"]);
 
-const datePickerRef = ref(null);
-const internalDate = ref(props.date);
+const internalDate = ref(props.date ? new Date(props.date) : null);
 
 // props.date → 내부 동기화
-watch(() => props.date, v => internalDate.value = v);
+watch(() => props.date, v => {
+  if (v) {
+    internalDate.value = new Date(v)
+  } else {
+    internalDate.value = null
+  }
+});
 
 // 날짜 선택 시 부모로 전달
-const onDateChange = (v) => {
-  let str = "";
-  if (typeof v === "string") str = v;
-  else if (v instanceof Date) str = v.toISOString().slice(0, 10);
-  emit("update:date", str);
-};
+const onDateChange = (event) => {
+  const date = event.value || internalDate.value
+  if (date instanceof Date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const str = `${year}-${month}-${day}`
+    emit("update:date", str)
+  } else if (typeof date === "string") {
+    emit("update:date", date)
+  }
+}
 const onRemove = (user) => {
   emit("remove", user);
 };
@@ -207,20 +223,10 @@ const onAdd = () => emit("add");
   margin: 6px 0 16px 0; /* 위쪽/아래쪽 이상적 간격 */
 }
 
-.hidden-date-picker {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  height: 0;
-  width: 0;
+.date-picker-wrapper {
+  min-width: 200px;
 }
 
-.note-textarea ::v-deep .el-textarea__inner {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent; /* 필요 시 */
-  resize: none; /* 크기 조절 막기 — 선택사항 */
-}
 .tag {
   color: black !important;
 }

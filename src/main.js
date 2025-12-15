@@ -23,6 +23,11 @@ import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Calendar from 'primevue/calendar'
+import Textarea from 'primevue/textarea'
+import TabView from 'primevue/tabview'
+import TabPanel from 'primevue/tabpanel'
+import InputText from 'primevue/inputtext'
 
 // Styles
 import 'primeicons/primeicons.css'
@@ -62,5 +67,12 @@ app.component('Column', Column)
 // PrimeVue Menu 컴포넌트 전역 등록
 import Menu from 'primevue/menu'
 app.component('Menu', Menu)
+
+// PrimeVue 예약 관련 컴포넌트 전역 등록
+app.component('Calendar', Calendar)
+app.component('Textarea', Textarea)
+app.component('TabView', TabView)
+app.component('TabPanel', TabPanel)
+app.component('InputText', InputText)
 
 app.mount('#app')

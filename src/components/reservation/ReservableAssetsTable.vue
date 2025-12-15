@@ -1,52 +1,94 @@
 <template>
-  <el-table
-    :data="props.rows"
-    border
-    style="width: 100%"
-    @row-click="goToDetail"
-    highlight-current-row
-  >
-    <el-table-column type="selection" width="48" />
+  <div class="table-wrapper">
+    <DataTable
+      :value="props.rows"
+      stripedRows
+      showGridlines
+      class="reservable-assets-datatable"
+      :emptyMessage="'데이터가 없습니다.'"
+      @row-click="(e) => goToDetail(e.data)"
+      :pt="{
+        root: { class: 'custom-datatable' },
+        header: { class: 'custom-header' },
+        thead: { class: 'custom-thead' },
+        tbody: { class: 'custom-tbody' },
+      }"
+    >
+      <!-- 자원명 -->
+      <Column
+        field="assetName"
+        header="자원명"
+        :style="{ minWidth: '240px', whiteSpace: 'nowrap' }"
+        :headerStyle="{ textAlign: 'center' }"
+        :bodyStyle="{ textAlign: 'center' }"
+      />
 
-    <el-table-column prop="assetName" label="자원명" min-width="350" align="center" />
+      <!-- 자원 유형 -->
+      <Column
+        field="assetType"
+        header="자원 유형"
+        :style="{ minWidth: '120px', whiteSpace: 'nowrap' }"
+        :headerStyle="{ textAlign: 'center' }"
+        :bodyStyle="{ textAlign: 'center' }"
+      >
+        <template #body="{ data }">
+          {{ data.assetType === 'STATIC' || data.assetType === 'static' ? '정적' : '동적' }}
+        </template>
+      </Column>
 
-    <!-- assetType -->
-    <el-table-column prop="assetType" label="자원 유형" width="120" align="center">
-      <template #default="scope">
-        {{ scope.row.assetType === 'STATIC' || scope.row.assetType === 'static' ? '정적' : '동적' }}
-      </template>
-    </el-table-column>
+      <!-- 카테고리 -->
+      <Column
+        field="categoryName"
+        header="카테고리"
+        :style="{ minWidth: '140px', whiteSpace: 'nowrap' }"
+        :headerStyle="{ textAlign: 'center' }"
+        :bodyStyle="{ textAlign: 'center' }"
+      />
 
-    <!-- categoryName -->
-    <el-table-column prop="categoryName" label="카테고리" width="180" align="center" />
+      <!-- 예약 가능 여부 -->
+      <Column
+        field="reservable"
+        header="예약 가능 여부"
+        :style="{ minWidth: '140px', whiteSpace: 'nowrap' }"
+        :headerStyle="{ textAlign: 'center' }"
+        :bodyStyle="{ textAlign: 'center' }"
+      >
+        <template #body="{ data }">
+          <StatusTag :status="data.reservable ? 'AVAILABLE' : 'UNAVAILABLE'" />
+        </template>
+      </Column>
 
-    <!-- reservable (문구로 표시) -->
-    <el-table-column prop="reservable" label="예약 가능 여부" width="140" align="center">
-      <template #default="scope">
-        <StatusTag :status="scope.row.reservable ? 'AVAILABLE' : 'UNAVAILABLE'" />
-      </template>
-    </el-table-column>
+      <!-- 승인 필요 -->
+      <Column
+        field="needsApproval"
+        header="승인 필요"
+        :style="{ minWidth: '120px', whiteSpace: 'nowrap' }"
+        :headerStyle="{ textAlign: 'center' }"
+        :bodyStyle="{ textAlign: 'center' }"
+      >
+        <template #body="{ data }">
+          {{ data.needsApproval ? '예' : '아니오' }}
+        </template>
+      </Column>
 
-    <!-- needsApproval -->
-    <el-table-column prop="needsApproval" label="승인 필요" width="110" align="center">
-      <template #default="scope">
-        {{ scope.row.needsApproval ? '예' : '아니오' }}
-      </template>
-    </el-table-column>
-
-    <el-table-column label="예약하기" width="100" align="center">
-      <template #default="scope">
-        <el-button
-          type="primary"
-          class="reserve-btn"
-          size="small"
-          @click.stop="goToDetail(scope.row, {})"
-        >
-          예약
-        </el-button>
-      </template>
-    </el-table-column>
-  </el-table>
+      <!-- 예약하기 -->
+      <Column
+        header="예약하기"
+        :style="{ minWidth: '120px', whiteSpace: 'nowrap' }"
+        :headerStyle="{ textAlign: 'center' }"
+        :bodyStyle="{ textAlign: 'center' }"
+        :exportable="false"
+      >
+        <template #body="{ data }">
+          <Button
+            label="예약"
+            class="reserve-btn"
+            @click.stop="goToDetail(data)"
+          />
+        </template>
+      </Column>
+    </DataTable>
+  </div>
 
   <div class="pagination">
     <el-pagination
@@ -60,6 +102,9 @@
 <script setup>
 import StatusTag from './ReservationStatus.vue'
 import { useRouter } from 'vue-router'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Button from 'primevue/button'
 
 const props = defineProps({
   rows: {
@@ -95,6 +140,13 @@ const goToDetail = (row) => {
 </script>
 
 <style scoped>
+.table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -102,68 +154,83 @@ const goToDetail = (row) => {
   padding-top: 24px;
   border-top: 1px solid #e5e7eb;
 }
+</style>
 
-/* 테이블 스타일 개선 */
-:deep(.el-table) {
+<style>
+/* PrimeVue DataTable full width */
+.reservable-assets-datatable.p-datatable {
+  width: 100%;
+}
+
+/* Prevent text wrapping */
+.reservable-assets-datatable.p-datatable td,
+.reservable-assets-datatable.p-datatable th {
+  white-space: nowrap;
+}
+
+/* Let columns auto-size */
+.reservable-assets-datatable.p-datatable table {
+  table-layout: auto;
+  width: 100%;
+}
+
+/* Reduce excessive padding */
+.reservable-assets-datatable.p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.75rem 1rem;
+}
+
+.reservable-assets-datatable.p-datatable .p-datatable-thead > tr > th {
+  padding: 0.75rem 1rem;
+}
+
+/* Table styling */
+.reservable-assets-datatable.p-datatable {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-:deep(.el-table__header) {
+.reservable-assets-datatable.p-datatable .p-datatable-thead > tr > th {
   background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-}
-
-:deep(.el-table th) {
-  background: transparent;
   color: #374151;
   font-weight: 600;
   font-size: 14px;
-  padding: 16px;
   border-bottom: 2px solid #e5e7eb;
 }
 
-:deep(.el-table td) {
-  padding: 16px;
+.reservable-assets-datatable.p-datatable .p-datatable-tbody > tr > td {
   border-bottom: 1px solid #f3f4f6;
 }
 
-:deep(.el-table__row:hover) {
+.reservable-assets-datatable.p-datatable .p-datatable-tbody > tr:hover {
   background: #f9fafb;
 }
 
-:deep(.el-table__row) {
+.reservable-assets-datatable.p-datatable .p-datatable-tbody > tr {
   transition: background 0.2s ease;
+  cursor: pointer;
 }
 
-.reserve-btn {
+/* Reserve button styling */
+.reservable-assets-datatable .reserve-btn {
   border: none;
   background: linear-gradient(135deg, #00a950 0%, #10b981 100%) !important;
   color: white !important;
   border-radius: 8px;
-  padding: 8px 20px;
+  padding: 0.5rem 1.25rem;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 169, 80, 0.2);
 }
 
-.reserve-btn:hover {
+.reservable-assets-datatable .reserve-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 169, 80, 0.3) !important;
   background: linear-gradient(135deg, #10b981 0%, #00a950 100%) !important;
 }
 
-.reserve-btn:active {
+.reservable-assets-datatable .reserve-btn:active {
   transform: translateY(0);
-}
-
-.reserve-btn:hover,
-.reserve-btn:focus,
-.el-button.reserve-btn:hover,
-.el-button.reserve-btn:focus {
-  border: none !important;
-  background: linear-gradient(135deg, #10b981 0%, #00a950 100%) !important;
-  color: white !important;
 }
 </style>
